@@ -1,0 +1,272 @@
+--// Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+local Workspace = game:GetService("Workspace")
+local lp = Players.LocalPlayer
+
+--// Notification
+local function notif(txt, dur)
+    StarterGui:SetCore("SendNotification", {
+        Title = "Siriguela Kill",
+        Text = txt,
+        Duration = dur or 3
+    })
+end
+
+--// Player parser
+local function getTargets(text)
+    local targets = {}
+    text = text:lower()
+
+    if text == "all" then
+        return Players:GetPlayers()
+    elseif text == "others" then
+        for _, v in pairs(Players:GetPlayers()) do
+            if v ~= lp then
+                table.insert(targets, v)
+            end
+        end
+        return targets
+    elseif text == "me" then
+        return { lp }
+    end
+
+    for name in string.gmatch(text, "([^,%s]+)") do
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr.Name:lower():sub(1, #name) == name then
+                table.insert(targets, plr)
+            end
+        end
+    end
+
+    return targets
+end
+
+--// GUI
+local gui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+gui.Name = "SiriguelaKillGui"
+gui.ResetOnSpawn = false
+
+local Main = Instance.new("Frame", gui)
+Main.Size = UDim2.new(0, 500, 0, 350)
+Main.Position = UDim2.new(0.33, 0, 0.3, 0)
+Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Main.Active = true
+Main.Draggable = true
+Main.BorderSizePixel = 0
+
+local Top = Instance.new("Frame", Main)
+Top.Size = UDim2.new(1, 0, 0, 40)
+Top.BackgroundColor3 = Color3.fromRGB(130, 0, 0)
+Top.BorderSizePixel = 0
+
+local Title = Instance.new("TextLabel", Top)
+Title.Size = UDim2.new(1, -40, 1, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "SIRIGUELA KILL"
+Title.Font = Enum.Font.GothamBlack
+Title.TextScaled = true
+Title.TextColor3 = Color3.new(1, 1, 1)
+
+local Close = Instance.new("TextButton", Top)
+Close.Size = UDim2.new(0, 40, 1, 0)
+Close.Position = UDim2.new(1, -40, 0, 0)
+Close.Text = "X"
+Close.Font = Enum.Font.GothamBlack
+Close.TextScaled = true
+Close.TextColor3 = Color3.new(1, 1, 1)
+Close.BackgroundColor3 = Color3.fromRGB(90, 0, 0)
+Close.BorderSizePixel = 0
+Close.MouseButton1Click:Connect(function()
+    gui:Destroy()
+    notif("Hub fechado")
+end)
+
+local Box = Instance.new("TextBox", Main)
+Box.Position = UDim2.new(0.05, 0, 0.1, 0)
+Box.Size = UDim2.new(0.9, 0, 0.15, 0)
+Box.PlaceholderText = "Ex: ana,joao | all | others"
+Box.TextColor3 = Color3.new(1, 1, 1)
+Box.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Box.Font = Enum.Font.Gotham
+Box.TextScaled = true
+Box.BorderSizePixel = 0
+
+local Scroll = Instance.new("ScrollingFrame", Main)
+Scroll.Position = UDim2.new(0.05, 0, 0.3, 0)
+Scroll.Size = UDim2.new(0.9, 0, 0.65, 0)
+Scroll.CanvasSize = UDim2.new(0, 0, 2, 0)
+Scroll.ScrollBarThickness = 8
+Scroll.BackgroundTransparency = 1
+Scroll.BorderSizePixel = 0
+
+local UIListLayout = Instance.new("UIListLayout", Scroll)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 5)
+
+--// View player
+local viewing = false
+local oldCameraSubject
+
+local function viewPlayer(target)
+    local cam = Workspace.CurrentCamera
+    if not target.Character or not target.Character:FindFirstChild("Humanoid") then return end
+
+    if not viewing then
+        oldCameraSubject = cam.CameraSubject
+        cam.CameraSubject = target.Character.Humanoid
+        viewing = true
+        notif("Visualizando: " .. target.Name)
+    else
+        cam.CameraSubject = oldCameraSubject
+        viewing = false
+        notif("View desativado")
+    end
+end
+
+--// TP player
+local function tpToPlayer(target)
+    local char = lp.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local thrp = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp or not thrp then return end
+
+    hrp.CFrame = thrp.CFrame * CFrame.new(0, 0, -3)
+    notif("TP até: " .. target.Name)
+end
+
+--// Touch fling
+local touchFling = false
+
+local function startTouchFling()
+    local movel = 0.1
+    while touchFling do
+        RunService.Heartbeat:Wait()
+        local char = lp.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local vel = hrp.Velocity
+            hrp.Velocity = vel * 10000 + Vector3.new(0, 10000, 0)
+            RunService.RenderStepped:Wait()
+            hrp.Velocity = vel
+            RunService.Stepped:Wait()
+            hrp.Velocity = vel + Vector3.new(0, movel, 0)
+            movel = -movel
+        end
+    end
+end
+
+--// Fling functions
+local function flingClassic(target)
+    local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local bt = Instance.new("BodyThrust", hrp)
+    bt.Force = Vector3.new(4000, 4000, 4000)
+
+    while target.Character and target.Character:FindFirstChild("HumanoidRootPart") do
+        hrp.CFrame = target.Character.HumanoidRootPart.CFrame
+        bt.Location = target.Character.HumanoidRootPart.Position
+        RunService.Heartbeat:Wait()
+    end
+
+    bt:Destroy()
+end
+
+local function flingAggressive(target)
+    local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local bt = Instance.new("BodyThrust", hrp)
+    bt.Force = Vector3.new(9e6, 9e6, 9e6)
+
+    while target.Character and target.Character:FindFirstChild("HumanoidRootPart") do
+        hrp.CFrame = target.Character.HumanoidRootPart.CFrame
+        bt.Location = target.Character.HumanoidRootPart.Position
+        RunService.Heartbeat:Wait()
+    end
+
+    bt:Destroy()
+end
+
+local function flingSpin(target)
+    local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local av = Instance.new("AngularVelocity", hrp)
+    av.MaxTorque = math.huge
+    av.AngularVelocity = Vector3.new(0, 60, 0)
+
+    local bt = Instance.new("BodyThrust", hrp)
+    bt.Force = Vector3.new(2e6, 2e6, 2e6)
+
+    while target.Character and target.Character:FindFirstChild("HumanoidRootPart") do
+        hrp.CFrame = target.Character.HumanoidRootPart.CFrame
+        bt.Location = target.Character.HumanoidRootPart.Position
+        RunService.Heartbeat:Wait()
+    end
+
+    bt:Destroy()
+    av:Destroy()
+end
+
+--// Button creator
+local function makeButton(name, callback)
+    local b = Instance.new("TextButton", Scroll)
+    b.Size = UDim2.new(1, 0, 0, 50)
+    b.Text = name
+    b.Font = Enum.Font.GothamBlack
+    b.TextScaled = true
+    b.TextColor3 = Color3.new(1, 1, 1)
+    b.BackgroundColor3 = Color3.fromRGB(160, 0, 0)
+    b.BorderSizePixel = 0
+    b.MouseButton1Click:Connect(callback)
+end
+
+--// Buttons
+makeButton("VIEW JOGADOR", function()
+    local t = getTargets(Box.Text)
+    if t[1] then viewPlayer(t[1]) end
+end)
+
+makeButton("TP JOGADOR", function()
+    local t = getTargets(Box.Text)
+    if t[1] then tpToPlayer(t[1]) end
+end)
+
+makeButton("TOUCH FLING", function()
+    touchFling = not touchFling
+    if touchFling then
+        notif("Touch Fling ativado")
+        task.spawn(startTouchFling)
+    else
+        notif("Touch Fling desativado")
+    end
+end)
+
+makeButton("FLING YEET CLÁSSICO", function()
+    for _, t in pairs(getTargets(Box.Text)) do
+        task.spawn(function()
+            flingClassic(t)
+        end)
+    end
+end)
+
+makeButton("FLING AGRESSIVO", function()
+    for _, t in pairs(getTargets(Box.Text)) do
+        task.spawn(function()
+            flingAggressive(t)
+        end)
+    end
+end)
+
+makeButton("FLING GIRATÓRIO", function()
+    for _, t in pairs(getTargets(Box.Text)) do
+        task.spawn(function()
+            flingSpin(t)
+        end)
+    end
+end)
+
+notif("Siriguela Kill carregado", 5)
