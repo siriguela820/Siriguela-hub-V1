@@ -1827,13 +1827,15 @@ FunctionManager:register("PART ORBIT", function()
 	loadstring(game:HttpGet("https://pastebin.com/raw/aZjaAr6F", true))()
 end, "Troll", "Probs better orbit")
 
-
+FunctionManager:register("esp MurderMystery2", function()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/siriguela820/Siriguela-hub-V1/refs/heads/main/MurderMystery2", true))()
+end, "Utility", " obrigado por ter usado o meu script!")
 FunctionManager:register("chat unbanner", function()
 	loadstring(game:HttpGet("https://pastebin.com/raw/aDFhvMC4", true))()
 end, "Utility", "Créditos ao criador original!")
 FunctionManager:register("Fling TROLL", function()
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/siriguela820/Siriguela-hub-V1/refs/heads/main/Siriguela%20kill", true))()
-end, "Troll", "Créditos ao criador original!")
+end, "Troll", " obrigado por ter usado o meu script!")
 
 --init
 updateGrid()
