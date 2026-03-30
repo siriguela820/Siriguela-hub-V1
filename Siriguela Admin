@@ -14,7 +14,7 @@ if not game:IsLoaded() then
 	notLoaded:Destroy()
 end
 
-currentVersion = '5.9.3'
+currentVersion = '0.1.1 alpha'
 
 Players = game:GetService("Players")
 
@@ -590,36 +590,6 @@ Description.TextWrapped = true
 Description.ZIndex = 10
 table.insert(text1,Description)
 
-IntroBackground.Name = "IntroBackground"
-IntroBackground.Parent = Holder
-IntroBackground.Active = true
-IntroBackground.BackgroundColor3 = Color3.fromRGB(36, 36, 37)
-IntroBackground.BorderSizePixel = 0
-IntroBackground.Position = UDim2.new(0, 0, 0, 45)
-IntroBackground.Size = UDim2.new(0, 250, 0, 175)
-IntroBackground.ZIndex = 10
-
-Logo.Name = "Logo"
-Logo.Parent = Holder
-Logo.BackgroundTransparency = 1
-Logo.BorderSizePixel = 0
-Logo.Position = UDim2.new(0, 125, 0, 127)
-Logo.Size = UDim2.new(0, 10, 0, 10)
-Logo.Image = "rbxassetid://1352543873"
-Logo.ImageTransparency = 0
-Logo.ZIndex = 10
-
-Credits.Name = "Credits"
-Credits.Parent = Holder
-Credits.BackgroundTransparency = 1
-Credits.BorderSizePixel = 0
-Credits.Position = UDim2.new(0, 0, 0.9, 30)
-Credits.Size = UDim2.new(0, 250, 0, 20)
-Credits.Font = Enum.Font.SourceSansLight
-Credits.FontSize = Enum.FontSize.Size18
-Credits.Text = "Edge // Zwolf // Moon // Toon"
-Credits.TextColor3 = Color3.new(1, 1, 1)
-Credits.ZIndex = 10
 
 KeybindsFrame.Name = "KeybindsFrame"
 KeybindsFrame.Parent = Settings
@@ -2835,4 +2805,38 @@ function saves()
 				saves()
 			end
 		else
-			writefil
+			writefileCooldown("SA_FE.iy", defaults)
+			wait()
+			if pcall(function() readfile("SA_FE.iy") end) then
+				saves()
+			else
+				nosaves = true
+				prefix = ';'
+				StayOpen = false
+				KeepInfYield = true
+				espTransparency = 0.3
+				logsEnabled = false
+				jLogsEnabled = false
+				aliases = {}
+				binds = {}
+				WayPoints = {}
+				PluginsTable = {}
+
+				local FileError = Instance.new("Frame")
+				local background = Instance.new("Frame")
+				local Directions = Instance.new("TextLabel")
+				local shadow = Instance.new("Frame")
+				local PopupText = Instance.new("TextLabel")
+				local Exit = Instance.new("TextButton")
+				local ExitImage = Instance.new("ImageLabel")
+
+				FileError.Name = randomString()
+				FileError.Parent = PARENT
+				FileError.Active = true
+				FileError.BackgroundTransparency = 1
+				FileError.Position = UDim2.new(0.5, -180, 0, 290)
+				FileError.Size = UDim2.new(0, 360, 0, 20)
+				FileError.ZIndex = 10
+
+				background.Name = "background"
+			
