@@ -1,5 +1,5 @@
 if IY_LOADED and not _G.IY_DEBUG == true then
-	-- error("Infinite Yield is already running!",0)
+	-- error("Siriguela Admin is already running!",0)
 	return
 end
 
@@ -9,12 +9,12 @@ COREGUI = game:GetService("CoreGui")
 if not game:IsLoaded() then
 	local notLoaded = Instance.new("Message")
 	notLoaded.Parent = COREGUI
-	notLoaded.Text = 'Infinite Yield is waiting for the game to load'
+	notLoaded.Text = 'Siriguela Admin is waiting for the game to load'
 	game.Loaded:Wait()
 	notLoaded:Destroy()
 end
 
-currentVersion = 'Alfa 0.1.1'
+currentVersion = '5.9.3'
 
 Players = game:GetService("Players")
 
@@ -206,7 +206,7 @@ Title.BorderSizePixel = 0
 Title.Size = UDim2.new(0, 250, 0, 20)
 Title.Font = Enum.Font.SourceSans
 Title.TextSize = 18
-Title.Text = "Siriguela Hub v" .. currentVersion
+Title.Text = "Siriguela Admin FE v" .. currentVersion
 
 do
 	local emoji = ({
@@ -609,7 +609,6 @@ Logo.Image = "rbxassetid://1352543873"
 Logo.ImageTransparency = 0
 Logo.ZIndex = 10
 
--- Credits editados
 Credits.Name = "Credits"
 Credits.Parent = Holder
 Credits.BackgroundTransparency = 1
@@ -618,7 +617,7 @@ Credits.Position = UDim2.new(0, 0, 0.9, 30)
 Credits.Size = UDim2.new(0, 250, 0, 20)
 Credits.Font = Enum.Font.SourceSansLight
 Credits.FontSize = Enum.FontSize.Size18
-Credits.Text = "Siriguela Hub Team"
+Credits.Text = "Siriguela Brasil "
 Credits.TextColor3 = Color3.new(1, 1, 1)
 Credits.ZIndex = 10
 
@@ -2836,4 +2835,4 @@ function saves()
 				saves()
 			end
 		else
-			w
+			writefileCooldown("I
