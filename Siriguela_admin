@@ -590,8 +590,7 @@ Description.TextWrapped = true
 Description.ZIndex = 10
 table.insert(text1,Description)
 
--- Intro removido
--- IntroBackground.Name = "IntroBackground"
+IntroBackground.Name = "IntroBackground"
 IntroBackground.Parent = Holder
 IntroBackground.Active = true
 IntroBackground.BackgroundColor3 = Color3.fromRGB(36, 36, 37)
@@ -600,8 +599,7 @@ IntroBackground.Position = UDim2.new(0, 0, 0, 45)
 IntroBackground.Size = UDim2.new(0, 250, 0, 175)
 IntroBackground.ZIndex = 10
 
--- Logo removida
--- Logo.Name = "Logo"
+Logo.Name = "Logo"
 Logo.Parent = Holder
 Logo.BackgroundTransparency = 1
 Logo.BorderSizePixel = 0
@@ -2834,3 +2832,8 @@ function saves()
 				end
 			else
 				writefileCooldown("IY_FE.iy", defaults)
+				wait()
+				saves()
+			end
+		else
+			w
