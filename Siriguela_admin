@@ -1,5 +1,5 @@
 if IY_LOADED and not _G.IY_DEBUG == true then
-	-- error("Siriguela Admin is already running!",0)
+	-- error("Infinite Yield is already running!",0)
 	return
 end
 
@@ -9,7 +9,7 @@ COREGUI = game:GetService("CoreGui")
 if not game:IsLoaded() then
 	local notLoaded = Instance.new("Message")
 	notLoaded.Parent = COREGUI
-	notLoaded.Text = 'Siriguela Admin is waiting for the game to load'
+	notLoaded.Text = 'Infinite Yield is waiting for the game to load'
 	game.Loaded:Wait()
 	notLoaded:Destroy()
 end
@@ -206,7 +206,7 @@ Title.BorderSizePixel = 0
 Title.Size = UDim2.new(0, 250, 0, 20)
 Title.Font = Enum.Font.SourceSans
 Title.TextSize = 18
-Title.Text = "Siriguela Admin FE v" .. currentVersion
+Title.Text = "Siriguela Admin v" .. currentVersion
 
 do
 	local emoji = ({
@@ -617,9 +617,16 @@ Credits.Position = UDim2.new(0, 0, 0.9, 30)
 Credits.Size = UDim2.new(0, 250, 0, 20)
 Credits.Font = Enum.Font.SourceSansLight
 Credits.FontSize = Enum.FontSize.Size18
-Credits.Text = "Siriguela Brasil "
+Credits.Text = "Edge // Zwolf // Moon // Toon"
 Credits.TextColor3 = Color3.new(1, 1, 1)
 Credits.ZIndex = 10
+-- Remove intro/logo
+pcall(function()
+	IntroBackground:Destroy()
+	Logo:Destroy()
+	Credits:Destroy()
+end)
+
 
 KeybindsFrame.Name = "KeybindsFrame"
 KeybindsFrame.Parent = Settings
@@ -2829,10 +2836,3 @@ function saves()
 					wait()
 					saves()
 				end
-			else
-				writefileCooldown("IY_FE.iy", defaults)
-				wait()
-				saves()
-			end
-		else
-			writefileCooldown("I
