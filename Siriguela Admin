@@ -14,7 +14,7 @@ if not game:IsLoaded() then
 	notLoaded:Destroy()
 end
 
-currentVersion = 'alpha 0.0.1'
+currentVersion = '5.9.3'
 
 Players = game:GetService("Players")
 
@@ -599,15 +599,14 @@ IntroBackground.Position = UDim2.new(0, 0, 0, 45)
 IntroBackground.Size = UDim2.new(0, 250, 0, 175)
 IntroBackground.ZIndex = 10
 
-Logo = Instance.new("TextLabel")
+Logo.Name = "Logo"
 Logo.Parent = Holder
 Logo.BackgroundTransparency = 1
-Logo.Position = UDim2.new(0, 0, 0, 60)
-Logo.Size = UDim2.new(1, 0, 0, 100)
-Logo.Font = Enum.Font.SourceSansBold
-Logo.Text = "🍊"
-Logo.TextScaled = true
-Logo.TextColor3 = Color3.fromRGB(255, 80, 80)
+Logo.BorderSizePixel = 0
+Logo.Position = UDim2.new(0, 125, 0, 127)
+Logo.Size = UDim2.new(0, 10, 0, 10)
+Logo.Image = "rbxassetid://1352543873"
+Logo.ImageTransparency = 0
 Logo.ZIndex = 10
 
 Credits.Name = "Credits"
@@ -2832,3 +2831,8 @@ function saves()
 				end
 			else
 				writefileCooldown("SA_FE.iy", defaults)
+				wait()
+				saves()
+			end
+		else
+			writefil
