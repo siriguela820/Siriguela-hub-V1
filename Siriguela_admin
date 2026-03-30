@@ -1,20 +1,20 @@
-if SA_LOADED and not _G.SA_DEBUG == true then
-	-- error("Siriguela Admin is already running!",0)
+if IY_LOADED and not _G.IY_DEBUG == true then
+	-- error("Infinite Yield is already running!",0)
 	return
 end
 
-pcall(function() getgenv().SA_LOADED = true end)
+pcall(function() getgenv().IY_LOADED = true end)
 
 COREGUI = game:GetService("CoreGui")
 if not game:IsLoaded() then
 	local notLoaded = Instance.new("Message")
 	notLoaded.Parent = COREGUI
-	notLoaded.Text = 'Siriguela Admin is waiting for the game to load'
+	notLoaded.Text = 'Infinite Yield is waiting for the game to load'
 	game.Loaded:Wait()
 	notLoaded:Destroy()
 end
 
-currentVersion = '5.9.3'
+currentVersion = 'Alfa 0.1.1'
 
 Players = game:GetService("Players")
 
@@ -50,10 +50,6 @@ Description = Instance.new("TextLabel")
 IntroBackground = Instance.new("Frame")
 Logo = Instance.new("ImageLabel")
 Credits = Instance.new("TextBox")
-
-IntroBackground.Visible = false
-Logo.Visible = false
-Credits.Visible = false
 KeybindsFrame = Instance.new("Frame")
 Close = Instance.new("TextButton")
 Add = Instance.new("TextButton")
@@ -210,7 +206,7 @@ Title.BorderSizePixel = 0
 Title.Size = UDim2.new(0, 250, 0, 20)
 Title.Font = Enum.Font.SourceSans
 Title.TextSize = 18
-Title.Text = "Siriguela Admin FE v" .. currentVersion
+Title.Text = "Siriguela Hub v" .. currentVersion
 
 do
 	local emoji = ({
@@ -594,7 +590,8 @@ Description.TextWrapped = true
 Description.ZIndex = 10
 table.insert(text1,Description)
 
-IntroBackground.Name = "IntroBackground"
+-- Intro removido
+-- IntroBackground.Name = "IntroBackground"
 IntroBackground.Parent = Holder
 IntroBackground.Active = true
 IntroBackground.BackgroundColor3 = Color3.fromRGB(36, 36, 37)
@@ -603,7 +600,8 @@ IntroBackground.Position = UDim2.new(0, 0, 0, 45)
 IntroBackground.Size = UDim2.new(0, 250, 0, 175)
 IntroBackground.ZIndex = 10
 
-Logo.Name = "Logo"
+-- Logo removida
+-- Logo.Name = "Logo"
 Logo.Parent = Holder
 Logo.BackgroundTransparency = 1
 Logo.BorderSizePixel = 0
@@ -613,6 +611,7 @@ Logo.Image = "rbxassetid://1352543873"
 Logo.ImageTransparency = 0
 Logo.ZIndex = 10
 
+-- Credits editados
 Credits.Name = "Credits"
 Credits.Parent = Holder
 Credits.BackgroundTransparency = 1
@@ -621,7 +620,7 @@ Credits.Position = UDim2.new(0, 0, 0.9, 30)
 Credits.Size = UDim2.new(0, 250, 0, 20)
 Credits.Font = Enum.Font.SourceSansLight
 Credits.FontSize = Enum.FontSize.Size18
-Credits.Text = "Edge // Zwolf // Moon // Toon"
+Credits.Text = "Siriguela Hub Team"
 Credits.TextColor3 = Color3.new(1, 1, 1)
 Credits.ZIndex = 10
 
@@ -1458,7 +1457,7 @@ PluginsHint.Position = UDim2.new(0, 25, 0, 40)
 PluginsHint.Size = UDim2.new(0, 200, 0, 50)
 PluginsHint.Font = Enum.Font.SourceSansItalic
 PluginsHint.TextSize = 16
-PluginsHint.Text = "Download plugins, Not from the SA Discord, Moon Is a skid"
+PluginsHint.Text = "Download plugins, Not from the IY Discord, Moon Is a skid"
 PluginsHint.TextColor3 = Color3.new(1, 1, 1)
 PluginsHint.TextStrokeColor3 = Color3.new(1, 1, 1)
 PluginsHint.TextWrapped = true
@@ -1907,7 +1906,7 @@ ViewportTextBox.convert(Cmdbar).View.ZIndex = 10
 ViewportTextBox.convert(Cmdbar_2).View.ZIndex = 10
 ViewportTextBox.convert(Cmdbar_3).View.ZIndex = 10
 
-SAMouse = Players.LocalPlayer:GetMouse()
+IYMouse = Players.LocalPlayer:GetMouse()
 UserInputService = game:GetService("UserInputService")
 TweenService = game:GetService("TweenService")
 HttpService = game:GetService("HttpService")
@@ -2731,7 +2730,7 @@ reference = (function()
 		{111,"TextLabel",{BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=1,Font=3,Name="Text",Parent={105},Position=UDim2.new(0,8,0,148),Size=UDim2.new(1,-8,0,16),Text="Setting up 'goto $1' on the OnChatted event will teleport you to any player that chats.",TextColor3=Color3.new(1,1,1),TextSize=14,TextWrapped=true,TextXAlignment=0,TextYAlignment=0,ZIndex=10,}},
 		{112,"Frame",{BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=1,Name="Section",Parent={7},Size=UDim2.new(1,0,0,105),ZIndex=10,}},
 		{113,"TextLabel",{BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=1,Font=4,Name="Header",Parent={112},Position=UDim2.new(0,8,0,5),Size=UDim2.new(1,-8,0,20),Text="Get Further Help",TextColor3=Color3.new(1,1,1),TextSize=20,TextXAlignment=0,ZIndex=10,}},
-		{114,"TextLabel",{BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=1,Font=3,Name="Text",Parent={112},Position=UDim2.new(0,8,0,30),Size=UDim2.new(1,-8,0,32),Text="You can join the Discord server to get support with SA,  and read up on more documentation such as the Plugin API.",TextColor3=Color3.new(1,1,1),TextSize=14,TextWrapped=true,TextXAlignment=0,ZIndex=10,}},
+		{114,"TextLabel",{BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=1,Font=3,Name="Text",Parent={112},Position=UDim2.new(0,8,0,30),Size=UDim2.new(1,-8,0,32),Text="You can join the Discord server to get support with IY,  and read up on more documentation such as the Plugin API.",TextColor3=Color3.new(1,1,1),TextSize=14,TextWrapped=true,TextXAlignment=0,ZIndex=10,}},
 		{115,"Frame",{BackgroundColor3=Color3.new(0.1803921610117,0.1803921610117,0.1843137294054),BorderSizePixel=0,Name="Line",Parent={112},Position=UDim2.new(0,10,1,-1),Size=UDim2.new(1,-20,0,1),Visible=false,ZIndex=10,}},
 		{116,"TextButton",{BackgroundColor3=Color3.new(0.48627451062202,0.61960786581039,0.85098040103912),BorderColor3=Color3.new(0.1803921610117,0.1803921610117,0.1843137294054),Font=4,Name="InviteButton",Parent={112},Position=UDim2.new(0,5,0,75),Size=UDim2.new(1,-10,0,25),Text="Copy Discord Invite Link (https://discord.io/infiniteyield)",TextColor3=Color3.new(0.1803921610117,0.1803921610117,0.1843137294054),TextSize=16,ZIndex=10,}},
 	})
@@ -2781,7 +2780,7 @@ defaultsettings = {
 	prefix = ';';
 	StayOpen = false;
 	espTransparency = 0.3;
-	keepSA = true;
+	keepIY = true;
 	logsEnabled = false;
 	jLogsEnabled = false;
 	aliases = {};
@@ -2803,13 +2802,13 @@ nosaves = false
 local loadedEventData = nil
 function saves()
 	if writefileExploit() then
-		if pcall(function() readfile("SA_FE.iy") end) then
-			if readfile("SA_FE.iy") ~= nil then
+		if pcall(function() readfile("IY_FE.iy") end) then
+			if readfile("IY_FE.iy") ~= nil then
 				local success, response = pcall(function()
-					local json = HttpService:JSONDecode(readfile("SA_FE.iy"))
+					local json = HttpService:JSONDecode(readfile("IY_FE.iy"))
 					if json.prefix ~= nil then prefix = json.prefix else prefix = ';' end
 					if json.StayOpen ~= nil then StayOpen = json.StayOpen else StayOpen = false end
-					if json.keepSA ~= nil then KeepInfYield = json.keepSA else KeepInfYield = true end
+					if json.keepIY ~= nil then KeepInfYield = json.keepIY else KeepInfYield = true end
 					if json.espTransparency ~= nil then espTransparency = json.espTransparency else espTransparency = 0.3 end
 					if json.logsEnabled ~= nil then logsEnabled = json.logsEnabled else logsEnabled = false end
 					if json.jLogsEnabled ~= nil then jLogsEnabled = json.jLogsEnabled else jLogsEnabled = false end
@@ -2829,9 +2828,9 @@ function saves()
 				if not success then
 					warn("Save Json Error:", response)
 					warn("Overwriting Save File")
-					writefileCooldown("SA_FE.iy", defaults)
+					writefileCooldown("IY_FE.iy", defaults)
 					wait()
 					saves()
 				end
 			else
-				writefileC
+				writefileCooldown("IY_FE.iy", defaults)
