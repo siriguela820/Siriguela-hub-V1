@@ -1,4 +1,4 @@
-if IY_LOADED and not _G.IY_DEBUG == true then
+if IY_LOADED and not _G.IY_DEBUG then
 	-- error("Infinite Yield is already running!",0)
 	return
 end
@@ -620,11 +620,11 @@ Credits.FontSize = Enum.FontSize.Size18
 Credits.Text = "Edge // Zwolf // Moon // Toon"
 Credits.TextColor3 = Color3.new(1, 1, 1)
 Credits.ZIndex = 10
--- Remove intro/logo
+-- Hide intro/logo safely
 pcall(function()
-	IntroBackground:Destroy()
-	Logo:Destroy()
-	Credits:Destroy()
+	IntroBackground.Visible = false
+	Logo.Visible = false
+	Credits.Visible = false
 end)
 
 
@@ -2834,5 +2834,4 @@ function saves()
 					warn("Overwriting Save File")
 					writefileCooldown("IY_FE.iy", defaults)
 					wait()
-					saves()
-				end
+					
