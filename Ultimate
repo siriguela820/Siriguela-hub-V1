@@ -1,0 +1,742 @@
+--[[
+    SIRIGUELA HUB ULTIMATE - Versão Completa Definitiva
+]]
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local TweenService = game:GetService("TweenService")
+local TextService = game:GetService("TextService")
+local Workspace = game:GetService("Workspace")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+local COLORS = {
+    bg = Color3.fromRGB(16, 12, 14),
+    panel = Color3.fromRGB(27, 20, 23),
+    panel2 = Color3.fromRGB(38, 27, 31),
+    red = Color3.fromRGB(190, 28, 47),
+    red2 = Color3.fromRGB(130, 18, 34),
+    text = Color3.fromRGB(245, 238, 240),
+    muted = Color3.fromRGB(174, 157, 163),
+}
+
+local oldGui = PlayerGui:FindFirstChild("SiriguelaHubUltimate")
+if oldGui then oldGui:Destroy() end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "SiriguelaHubUltimate"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = PlayerGui
+
+local function corner(parent, radius)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius or 8)
+    c.Parent = parent
+    return c
+end
+
+local function stroke(parent, color, thickness)
+    local s = Instance.new("UIStroke")
+    s.Color = color or COLORS.red
+    s.Thickness = thickness or 1
+    s.Transparency = 0.25
+    s.Parent = parent
+    return s
+end
+
+local function make(className, props, parent)
+    local obj = Instance.new(className)
+    for k, v in pairs(props or {}) do obj[k] = v end
+    obj.Parent = parent
+    return obj
+end
+
+local function label(parent, text, size, position, fontSize, color)
+    return make("TextLabel", {
+        BackgroundTransparency = 1,
+        Size = size,
+        Position = position,
+        Text = text,
+        TextColor3 = color or COLORS.text,
+        Font = Enum.Font.Gotham,
+        TextSize = fontSize or 14,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+        TextWrapped = true,
+    }, parent)
+end
+
+local function button(parent, text, size, position, callback, secondary)
+    local b = make("TextButton", {
+        Size = size,
+        Position = position,
+        BackgroundColor3 = secondary and COLORS.panel2 or COLORS.red2,
+        Text = text,
+        TextColor3 = COLORS.text,
+        Font = Enum.Font.GothamSemibold,
+        TextSize = 13,
+        AutoButtonColor = true,
+        BorderSizePixel = 0,
+    }, parent)
+    corner(b, 7)
+    if not secondary then stroke(b, COLORS.red, 1) end
+    b.Activated:Connect(function()
+        if callback then callback() end
+    end)
+    return b
+end
+
+local function textbox(parent, placeholder, size, position)
+    local t = make("TextBox", {
+        Size = size,
+        Position = position,
+        BackgroundColor3 = COLORS.bg,
+        TextColor3 = COLORS.text,
+        PlaceholderColor3 = COLORS.muted,
+        PlaceholderText = placeholder,
+        Text = "",
+        Font = Enum.Font.Gotham,
+        TextSize = 14,
+        ClearTextOnFocus = false,
+        BorderSizePixel = 0,
+    }, parent)
+    corner(t, 7)
+    stroke(t, COLORS.panel2, 1)
+    return t
+end
+
+local main = make("Frame", {
+    Name = "Main",
+    Size = UDim2.new(0, 680, 0, 420),
+    Position = UDim2.new(0.5, -340, 0.5, -210),
+    BackgroundColor3 = COLORS.bg,
+    BorderSizePixel = 0,
+    ClipsDescendants = true,
+}, gui)
+corner(main, 12)
+stroke(main, COLORS.red, 1.5)
+
+local sizeConstraint = Instance.new("UISizeConstraint")
+sizeConstraint.MinSize = Vector2.new(320, 300)
+sizeConstraint.MaxSize = Vector2.new(820, 560)
+sizeConstraint.Parent = main
+
+local scale = Instance.new("UIScale")
+scale.Scale = 1
+scale.Parent = main
+
+local header = make("Frame", {
+    Size = UDim2.new(1, 0, 0, 48),
+    BackgroundColor3 = COLORS.panel,
+    BorderSizePixel = 0,
+}, main)
+local title = label(header, "SIRIGUELA HUB", UDim2.new(1, -130, 1, 0), UDim2.new(0, 16, 0, 0), 18)
+title.Font = Enum.Font.GothamBlack
+local subtitle = label(header, "ULTIMATE", UDim2.new(1, -150, 0, 14), UDim2.new(0, 17, 1, -14), 9, COLORS.muted)
+local minimize = button(header, "—", UDim2.new(0, 38, 0, 30), UDim2.new(1, -88, 0, 9), nil, true)
+local close = button(header, "×", UDim2.new(0, 38, 0, 30), UDim2.new(1, -44, 0, 9), function() gui:Destroy() end)
+
+local sidebar = make("Frame", {
+    Position = UDim2.new(0, 0, 0, 48),
+    Size = UDim2.new(0, 150, 1, -48),
+    BackgroundColor3 = COLORS.panel,
+    BorderSizePixel = 0,
+}, main)
+
+local navList = make("ScrollingFrame", {
+    Size = UDim2.new(1, -12, 1, -16),
+    Position = UDim2.new(0, 6, 0, 8),
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    ScrollBarThickness = 3,
+    CanvasSize = UDim2.new(),
+    AutomaticCanvasSize = Enum.AutomaticSize.Y,
+}, sidebar)
+make("UIListLayout", {Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder}, navList)
+
+local content = make("Frame", {
+    Position = UDim2.new(0, 150, 0, 48),
+    Size = UDim2.new(1, -150, 1, -48),
+    BackgroundTransparency = 1,
+}, main)
+
+local pages, navButtons = {}, {}
+local activePage = nil
+local function newPage(name)
+    local p = make("ScrollingFrame", {
+        Name = name,
+        Size = UDim2.new(1, -20, 1, -20),
+        Position = UDim2.new(0, 10, 0, 10),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = COLORS.red,
+        CanvasSize = UDim2.new(),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        Visible = false,
+    }, content)
+    make("UIListLayout", {Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder}, p)
+    pages[name] = p
+    return p
+end
+
+local function pageTitle(parent, heading)
+    local box = make("Frame", {
+        Size = UDim2.new(1, -4, 0, 42),
+        BackgroundColor3 = COLORS.panel,
+        BorderSizePixel = 0,
+    }, parent)
+    corner(box, 8)
+    label(box, heading, UDim2.new(1, -18, 1, 0), UDim2.new(0, 10, 0, 0), 16).Font = Enum.Font.GothamBold
+end
+
+local function infoCard(parent, heading, body)
+    local box = make("Frame", {
+        Size = UDim2.new(1, -4, 0, 60),
+        BackgroundColor3 = COLORS.panel,
+        BorderSizePixel = 0,
+    }, parent)
+    corner(box, 8)
+    label(box, heading, UDim2.new(1, -18, 0, 20), UDim2.new(0, 10, 0, 5), 13).Font = Enum.Font.GothamBold
+    label(box, body, UDim2.new(1, -18, 0, 28), UDim2.new(0, 10, 0, 26), 11, COLORS.muted)
+    return box
+end
+
+local function addNav(name, icon)
+    local b = button(navList, icon .. "  " .. name, UDim2.new(1, 0, 0, 35), UDim2.new(), function()
+        if activePage then activePage.Visible = false end
+        activePage = pages[name]
+        activePage.Visible = true
+        for navName, nav in pairs(navButtons) do
+            nav.BackgroundColor3 = navName == name and COLORS.red2 or COLORS.panel2
+        end
+    end, true)
+    b.TextXAlignment = Enum.TextXAlignment.Left
+    b.TextSize = 12
+    navButtons[name] = b
+end
+
+local function notify(message)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Siriguela Hub",
+            Text = message,
+            Duration = 2,
+        })
+    end)
+end
+
+-- Variáveis Globais
+local selectedPlayer = nil
+local viewingPlayer = false
+local oldCameraSubject = nil
+local tpToolEnabled = false
+local tpToolConnection = nil
+
+local function stopViewing()
+    local camera = workspace.CurrentCamera
+    if camera and oldCameraSubject then camera.CameraSubject = oldCameraSubject end
+    oldCameraSubject = nil
+    viewingPlayer = false
+end
+
+-- 1. HOME
+local home = newPage("Home")
+pageTitle(home, "Painel Principal")
+infoCard(home, "Status", "Siriguela Hub Ultimate carregado com sucesso.")
+
+-- 2. TROLL
+local troll = newPage("Troll")
+pageTitle(troll, "Troll & Kill")
+local playerSearch = textbox(troll, "Buscar jogador...", UDim2.new(1, -4, 0, 36), UDim2.new())
+local selectedLabel = infoCard(troll, "Selecionado", "Nenhum jogador selecionado.")
+
+button(troll, "Atualizar Lista", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    refreshPlayers()
+    notify("Lista de jogadores atualizada.")
+end, true)
+
+local playerList = make("Frame", {
+    Size = UDim2.new(1, -4, 0, 150),
+    BackgroundColor3 = COLORS.panel,
+    BorderSizePixel = 0,
+}, troll)
+corner(playerList, 8)
+local playerScroll = make("ScrollingFrame", {
+    Size = UDim2.new(1, -10, 1, -10),
+    Position = UDim2.new(0, 5, 0, 5),
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    ScrollBarThickness = 4,
+    CanvasSize = UDim2.new(),
+    AutomaticCanvasSize = Enum.AutomaticSize.Y,
+}, playerList)
+make("UIListLayout", {Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, playerScroll)
+
+function refreshPlayers()
+    for _, child in ipairs(playerScroll:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    local query = string.lower(playerSearch.Text or "")
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and (query == "" or string.find(string.lower(plr.Name), query, 1, true)
+            or string.find(string.lower(plr.DisplayName), query, 1, true)) then
+            local b = button(playerScroll, plr.DisplayName .. " (@" .. plr.Name .. ")", UDim2.new(1, -2, 0, 31), UDim2.new(), function()
+                selectedPlayer = plr
+                local textLabel = selectedLabel:FindFirstChildWhichIsA("TextLabel")
+                if textLabel then textLabel.Text = "Alvo: " .. plr.Name end
+                notify("Selecionado: " .. plr.Name)
+            end, true)
+            b.TextXAlignment = Enum.TextXAlignment.Left
+        end
+    end
+end
+playerSearch:GetPropertyChangedSignal("Text"):Connect(refreshPlayers)
+Players.PlayerAdded:Connect(refreshPlayers)
+Players.PlayerRemoving:Connect(function(plr)
+    if selectedPlayer == plr then selectedPlayer = nil end
+    refreshPlayers()
+end)
+refreshPlayers()
+
+button(troll, "View (Visualizar Câmera)", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    if not selectedPlayer or not selectedPlayer.Character then notify("Selecione um jogador válido.") return end
+    local targetHumanoid = selectedPlayer.Character:FindFirstChildOfClass("Humanoid")
+    local camera = workspace.CurrentCamera
+    if not targetHumanoid or not camera then return end
+    if viewingPlayer then stopViewing() end
+    oldCameraSubject = camera.CameraSubject
+    camera.CameraSubject = targetHumanoid
+    viewingPlayer = true
+    notify("Visualizando " .. selectedPlayer.Name)
+end)
+
+button(troll, "Restaurar Câmera", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    stopViewing()
+    notify("Câmera restaurada.")
+end, true)
+
+button(troll, "TP (Teleportar ao Alvo)", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    if not selectedPlayer or not selectedPlayer.Character or not selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        notify("Selecione um jogador válido.")
+        return
+    end
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.CFrame = selectedPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+        notify("Teleportado para " .. selectedPlayer.Name)
+    end
+end)
+
+button(troll, "Fling Yeet", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    if not selectedPlayer or not selectedPlayer.Character or not selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        notify("Selecione um alvo na lista.")
+        return
+    end
+    local character = LocalPlayer.Character
+    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local target = selectedPlayer
+    local bt = Instance.new("BodyThrust", hrp)
+    bt.Force = Vector3.new(4000, 4000, 4000)
+    
+    task.spawn(function()
+        while target.Character and target.Character:FindFirstChild("HumanoidRootPart") do
+            hrp.CFrame = target.Character.HumanoidRootPart.CFrame
+            bt.Location = target.Character.HumanoidRootPart.Position
+            RunService.Heartbeat:Wait()
+        end
+        bt:Destroy()
+    end)
+    notify("Fling Yeet aplicado em " .. target.Name)
+end)
+
+button(troll, "Toque Fling", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    pcall(function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/LgZwZ7ZB", true))()
+    end)
+    notify("Toque Fling ativado!")
+end)
+
+-- Black Hole Base Script Integrado
+local blackHoleActive = false
+local angle = 1
+local radius = 10
+local attachment1Global = nil
+
+local function setupBlackHolePlayer()
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local hrp = character:WaitForChild("HumanoidRootPart")
+    local folder = Instance.new("Folder", Workspace)
+    local part = Instance.new("Part", folder)
+    local att1 = Instance.new("Attachment", part)
+    part.Anchored = true
+    part.CanCollide = false
+    part.Transparency = 1
+    return hrp, att1
+end
+
+if not getgenv().Network then
+    getgenv().Network = { BaseParts = {}, Velocity = Vector3.new(14.46262424, 14.46262424, 14.46262424) }
+    Network.RetainPart = function(part)
+        if typeof(part) == "Instance" and part:IsA("BasePart") and part:IsDescendantOf(Workspace) then
+            table.insert(Network.BaseParts, part)
+            part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
+            part.CanCollide = false
+        end
+    end
+    RunService.Heartbeat:Connect(function()
+        pcall(function() sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge) end)
+        for _, part in pairs(Network.BaseParts) do
+            if part:IsDescendantOf(Workspace) then part.Velocity = Network.Velocity end
+        end
+    end)
+end
+
+local function ForcePart(v, attachment1)
+    if v:IsA("Part") and not v.Anchored and not v.Parent:FindFirstChild("Humanoid") and not v.Parent:FindFirstChild("Head") and v.Name ~= "Handle" then
+        for _, x in next, v:GetChildren() do
+            if x:IsA("BodyAngularVelocity") or x:IsA("BodyForce") or x:IsA("BodyGyro") or x:IsA("BodyPosition") or x:IsA("BodyThrust") or x:IsA("BodyVelocity") or x:IsA("RocketPropulsion") then
+                x:Destroy()
+            end
+        end
+        if v:FindFirstChild("Attachment") then v:FindFirstChild("Attachment"):Destroy() end
+        if v:FindFirstChild("AlignPosition") then v:FindFirstChild("AlignPosition"):Destroy() end
+        if v:FindFirstChild("Torque") then v:FindFirstChild("Torque"):Destroy() end
+        v.CanCollide = false
+        
+        local Torque = Instance.new("Torque", v)
+        Torque.Torque = Vector3.new(1000000, 1000000, 1000000)
+        local AlignPosition = Instance.new("AlignPosition", v)
+        local Attachment2 = Instance.new("Attachment", v)
+        Torque.Attachment0 = Attachment2
+        AlignPosition.MaxForce = math.huge
+        AlignPosition.MaxVelocity = math.huge
+        AlignPosition.Responsiveness = 500
+        AlignPosition.Attachment0 = Attachment2
+        AlignPosition.Attachment1 = attachment1
+    end
+end
+
+button(troll, "Black Hole", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    blackHoleActive = not blackHoleActive
+    notify(blackHoleActive and "Black Hole ativado." or "Black Hole desativado.")
+    if blackHoleActive then
+        local hrp, att1 = setupBlackHolePlayer()
+        attachment1Global = att1
+        for _, v in next, Workspace:GetDescendants() do ForcePart(v, att1) end
+        Workspace.DescendantAdded:Connect(function(v)
+            if blackHoleActive then ForcePart(v, att1) end
+        end)
+        spawn(function()
+            while blackHoleActive and RunService.RenderStepped:Wait() do
+                angle = angle + math.rad(2)
+                local offsetX = math.cos(angle) * radius
+                local offsetZ = math.sin(angle) * radius
+                if hrp and att1 then
+                    att1.WorldCFrame = hrp.CFrame * CFrame.new(offsetX, 0, offsetZ)
+                end
+            end
+        end)
+    else
+        if attachment1Global then attachment1Global.WorldCFrame = CFrame.new(0, -1000, 0) end
+    end
+end)
+
+button(troll, "TP Tool (Clique para Teleportar)", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    tpToolEnabled = not tpToolEnabled
+    notify(tpToolEnabled and "TP Tool ativado." or "TP Tool desativado.")
+    if tpToolEnabled then
+        local mouse = LocalPlayer:GetMouse()
+        tpToolConnection = mouse.Button1Down:Connect(function()
+            if tpToolEnabled and mouse.Target then
+                local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then hrp.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0)) end
+            end
+        end)
+    else
+        if tpToolConnection then tpToolConnection:Disconnect() tpToolConnection = nil end
+    end
+end, true)
+
+-- 3. FUN
+local fun = newPage("Fun")
+pageTitle(fun, "Fun & Diversão")
+
+button(fun, "Dance", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if hum then
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://27789359"
+        local track = hum:LoadAnimation(anim)
+        track:Play()
+        notify("Dançando!")
+    end
+end)
+
+button(fun, "Girar Personagem", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        for i = 1, 36 do
+            hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(10), 0)
+            RunService.Heartbeat:Wait()
+        end
+        notify("Giro concluído!")
+    end
+end)
+
+button(fun, "Invisível (Invis GUI)", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    pcall(function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/3Rnd9rHf'))()
+    end)
+    notify("Invisibilidade executada.")
+end)
+
+-- 4. PLAYER
+local playerPage = newPage("Player")
+pageTitle(playerPage, "Configurações de Player")
+
+local noclipActive = false
+button(playerPage, "Alternar Noclip", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
+    noclipActive = not noclipActive
+    notify(noclipActive and "Noclip ativado." or "Noclip desativado.")
+end)
+
+RunService.Stepped:Connect(function()
+    if noclipActive and LocalPlayer.Character then
+        for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+    end
+end)
+
+local speedInput = textbox(playerPage, "Velocidade (16 - 150)", UDim2.new(1, -4, 0, 36), UDim2.new())
+button(playerPage, "Aplicar Velocidade", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    local n = tonumber(speedInput.Text)
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if not hum or not n then return end
+    hum.WalkSpeed = math.clamp(n, 16, 150)
+    notify("Velocidade definida: " .. hum.WalkSpeed)
+end)
+
+local jumpInput = textbox(playerPage, "Força do Pulo (50 - 300)", UDim2.new(1, -4, 0, 36), UDim2.new())
+button(playerPage, "Aplicar Pulo", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    local n = tonumber(jumpInput.Text)
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if not hum or not n then return end
+    hum.UseJumpPower = true
+    hum.JumpPower = math.clamp(n, 50, 300)
+    notify("Pulo definido: " .. hum.JumpPower)
+end)
+
+button(playerPage, "Resetar Personagem", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if hum then hum.Health = 0 end
+end, true)
+
+-- 5. ESP
+local espPage = newPage("Esp")
+pageTitle(espPage, "ESP Geral & MM2")
+local espEnabled = false
+button(espPage, "Alternar ESP de Jogadores", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
+    espEnabled = not espEnabled
+    notify(espEnabled and "ESP Ativado." or "ESP Desativado.")
+end)
+
+RunService.RenderStepped:Connect(function()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            local char = plr.Character
+            local hl = char:FindFirstChild("SiriguelaESP")
+            if espEnabled then
+                if not hl then
+                    hl = Instance.new("Highlight")
+                    hl.Name = "SiriguelaESP"
+                    hl.FillColor = Color3.fromRGB(190, 28, 47)
+                    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    hl.Parent = char
+                end
+            else
+                if hl then hl:Destroy() end
+            end
+        end
+    end
+end)
+
+button(espPage, "ESP MurderMystery2", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/siriguela820/Siriguela-hub-V1/refs/heads/main/MurderMystery2", true))()
+    end)
+    notify("ESP MM2 Carregado.")
+end)
+
+-- 6. FE (Com todas as animações e scripts solicitados)
+local fe = newPage("FE")
+pageTitle(fe, "Utilidades FE")
+
+button(fe, "FE Jerk Off", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    pcall(function() loadstring(game:HttpGet("https://pastefy.app/wa3v2Vgm/raw"))() end)
+    notify("FE Jerk Off executado.")
+end)
+
+button(fe, "FE Shape Shifter Anim", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    pcall(function() loadstring(game:HttpGet("https://pastefy.app/2C3cRXXp/raw"))() end)
+    notify("Shape Shifter executado.")
+end)
+
+button(fe, "FE Seraphic Blade Anim", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    pcall(function() loadstring(game:HttpGet("https://pastefy.app/59mJGQGe/raw"))() end)
+    notify("Seraphic Blade executado.")
+end)
+
+button(fe, "FE Psycho Animation", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    pcall(function() loadstring(game:HttpGet("https://pastefy.app/YJITpCRA/raw"))() end)
+    notify("Psycho Animation executado.")
+end)
+
+button(fe, "FE Killer Animation", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    pcall(function() loadstring(game:HttpGet("https://pastefy.app/riYch0rX/raw"))() end)
+    notify("Killer Animation executado.")
+end)
+
+button(fe, "FE Zombie", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    pcall(function() loadstring(game:HttpGet("https://pastefy.app/JOWniO6o/raw"))() end)
+    notify("FE Zombie executado.")
+end)
+
+button(fe, "FE R15 Jerk Off", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    pcall(function() loadstring(game:HttpGet("https://pastefy.app/YZoglOyJ/raw"))() end)
+    notify("R15 Jerk Off executado.")
+end)
+
+button(fe, "FE R15 Sonic X Super", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Azizanzz0/FE-R15-Sonic-X-Super/refs/heads/main/Protected%20SonicXSuper.txt"))() end)
+    notify("Sonic X Super executado.")
+end)
+
+button(fe, "FE Car v4", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/AstraOutlight/my-scripts/refs/heads/main/fe%20car%20v4"))() end)
+    notify("FE Car v4 executado.")
+end)
+
+-- 7. SCRIPTS
+local scriptsPage = newPage("Scripts")
+pageTitle(scriptsPage, "Scripts Externos")
+
+button(scriptsPage, "Carregar Ghost Hub", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
+    notify("Carregando Ghost Hub...")
+    pcall(function()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/GhostPlayer352/Test4/main/GhostHub', true))()
+    end)
+end)
+
+button(scriptsPage, "VFly + Noclip", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
+    notify("Carregando VFly...")
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/makkurokurosukescript/VFly-gui/refs/heads/main/VFly%20gui", true))()
+    end)
+end)
+
+-- 8. PROTEÇÃO (Anti Fling Avançado)
+local protecao = newPage("Proteção")
+pageTitle(protecao, "Proteções e Segurança")
+
+local antiFlingActive = false
+button(protecao, "Alternar Anti Fling (Anula Ataques)", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
+    antiFlingActive = not antiFlingActive
+    notify(antiFlingActive and "Anti Fling ATIVADO!" or "Anti Fling DESATIVADO.")
+end)
+
+RunService.Heartbeat:Connect(function()
+    if antiFlingActive then
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            if hrp.AssemblyLinearVelocity.Magnitude > 250 or hrp.AssemblyAngularVelocity.Magnitude > 50 then
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            end
+        end
+    end
+end)
+
+infoCard(protecao, "Modo Anti Fling", "Anula física anômala e impulsos excessivos aplicados por terceiros.")
+
+-- 9. SETTINGS
+local settings = newPage("Settings")
+pageTitle(settings, "Configurações")
+button(settings, "Alternar Escala", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
+    scale.Scale = scale.Scale == 1 and 0.85 or 1
+end)
+button(settings, "Centralizar Janela", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
+    main.Position = UDim2.new(0.5, -main.AbsoluteSize.X / 2, 0.5, -main.AbsoluteSize.Y / 2)
+end, true)
+
+-- Navegação Completa
+for _, entry in ipairs({
+    {"Home", "⌂"},
+    {"Troll", "☠"},
+    {"Fun", "★"},
+    {"Player", "☺"},
+    {"Esp", "👁"},
+    {"FE", "⚡"},
+    {"Scripts", "▤"},
+    {"Proteção", "🛡"},
+    {"Settings", "⚙"},
+}) do addNav(entry[1], entry[2]) end
+
+activePage = pages.Home
+activePage.Visible = true
+navButtons.Home.BackgroundColor3 = COLORS.red2
+
+-- Arrastar Janela
+local dragging, dragStart, startPos
+header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = main.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+local minimized = false
+minimize.Activated:Connect(function()
+    minimized = not minimized
+    sidebar.Visible = not minimized
+    content.Visible = not minimized
+    main.Size = minimized and UDim2.new(0, 260, 0, 48) or UDim2.new(0, 680, 0, 420)
+    minimize.Text = minimized and "+" or "—"
+end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.RightShift and gui.Parent then
+        main.Visible = not main.Visible
+    end
+end)
+
+-- === INCLUSÃO DO SISTEMA DE COMANDOS DO INFINITE YIELD SOLICITADO ===
+task.spawn(function()
+    pcall(function()
+        loadstring(readfile and isfile and isfile("Admin_2.txt") and readfile("Admin_2.txt") or game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+    end)
+end)
+
+print("Siriguela Hub Ultimate carregado com sucesso.")
