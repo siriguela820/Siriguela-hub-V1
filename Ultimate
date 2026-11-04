@@ -1,6 +1,6 @@
 --[[
-    SIRIGUELA HUB ULTIMATE - Versão Completa Definitiva (FINAL)
-    PARTE 1/3 - Base, helpers, Home, Comandos (core)
+    SIRIGUELA HUB ULTIMATE - Versão Final Completa
+    PARTE 1/3 - Base, helpers, Home
     COLE AS 3 PARTES EM UM ÚNICO ARQUIVO .LUA
 ]]
 
@@ -132,7 +132,7 @@ sizeConstraint.MaxSize = Vector2.new(820, 560)
 sizeConstraint.Parent = main
 
 local scale = Instance.new("UIScale")
-scale.Scale = 0.75  -- começa menor
+scale.Scale = 0.75
 scale.Parent = main
 
 local header = make("Frame", {
@@ -236,7 +236,6 @@ local function notify(message)
     end)
 end
 
--- Variáveis globais
 local selectedPlayer = nil
 local viewingPlayer = false
 local oldCameraSubject = nil
@@ -255,11 +254,12 @@ end
 local home = newPage("Home")
 pageTitle(home, "Painel Principal")
 infoCard(home, "Status", "Siriguela Hub Ultimate carregado com sucesso. Use a aba Comandos.")
--- 2. COMANDOS (Réplica fiel do Siriguela Admin)
+-- ============================================================
+-- 2. COMANDOS (Réplica do Siriguela Admin)
+-- ============================================================
 local cmdPage = newPage("Comandos")
 pageTitle(cmdPage, "Comandos do Siriguela Admin")
 
--- ==== ESTADO DO ADMIN (idêntico ao original) ====
 local lplayer = LocalPlayer
 local Mouse = lplayer:GetMouse()
 local prefix = ";"
@@ -274,7 +274,6 @@ local annoying = false
 local hwalk = false
 local droppinghats = false
 local droppingtools = false
-local flying = false
 local spamming = false
 local spammingpm = false
 local remotes = true
@@ -293,7 +292,7 @@ local changingstate = false
 local statechosen = 0
 local cbring = false
 local cbringall = false
-local spinplr, flwplr, trlplr, annplr, hdwplr, stareplr, bplrr, brplr, attplr, pmspammed
+local spinplr, flwplr, trlplr, annplr, hdwplr, stareplr, bplrr, brplr, pmspammed
 local spamtext = ""
 local saved = CFrame.new()
 
@@ -314,7 +313,6 @@ local function GetPlayer(String)
     return Found
 end
 
--- ==== LOOPS (idênticos ao original) ====
 RunService.Stepped:Connect(function()
     if spin and spinplr and spinplr.Character and lplayer.Character then
         lplayer.Character.HumanoidRootPart.CFrame = spinplr.Character.HumanoidRootPart.CFrame
@@ -450,7 +448,6 @@ task.spawn(function()
     end
 end)
 
--- ==== EXECUTOR DE COMANDOS (mesma lógica do lplayer.Chatted do Admin) ====
 local function RunAdminCommand(msg)
     if not msg or msg == "" then return false end
     if msg:sub(1,5) == "kill " then
@@ -852,7 +849,6 @@ local function RunAdminCommand(msg)
     return false
 end
 
--- ==== INTERFACE DA ABA COMANDOS ====
 local cmdInput = textbox(cmdPage, "Digite um comando... (ex: speed 100)", UDim2.new(1, -4, 0, 38), UDim2.new())
 
 button(cmdPage, "▶ Executar Comando", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
@@ -888,8 +884,8 @@ pageTitle(cmdPage, "Lista de Comandos (digite para filtrar)")
 
 local commandList = {
     {cmd="kill", desc="Mata o jogador (precisa tool)", arg="player"},
-    {cmd="bring", desc="Traz o jogador até você (precisa tool)", arg="player"},
-    {cmd="fling", desc="Arremessa o jogador (precisa tool)", arg="player"},
+    {cmd="bring", desc="Traz o jogador até você", arg="player"},
+    {cmd="fling", desc="Arremessa o jogador", arg="player"},
     {cmd="void", desc="Teleporta o jogador para o void", arg="player"},
     {cmd="follow", desc="Segue o jogador", arg="player"},
     {cmd="unfollow", desc="Para de seguir", arg="none"},
@@ -1052,7 +1048,9 @@ end)
 refreshCmdList("")
 _G.SiriguelaRefreshHistory()
 
+-- ============================================================
 -- 3. TROLL
+-- ============================================================
 local troll = newPage("Troll")
 pageTitle(troll, "Troll & Kill")
 local playerSearch = textbox(troll, "Buscar jogador...", UDim2.new(1, -4, 0, 36), UDim2.new())
@@ -1142,40 +1140,30 @@ button(troll, "Toque Fling", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     notify("Toque Fling ativado!")
 end)
 
--- Black Hole
-local blackHoleActive = false
-local angle = 1
-local radius = 10
-local attachment1Global = nil
-local function setupBlackHolePlayer()
-    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local hrp = character:WaitForChild("HumanoidRootPart")
+-- === BLACK HOLE (dentro do alvo) ===
+local blackHoleTargetActive = false
+local bhAngle = 1
+local bhRadius = 5
+local bhAttachment1Global = nil
+local bhTargetUser = nil
+
+local function setupBlackHoleTarget()
     local folder = Instance.new("Folder", Workspace)
     local part = Instance.new("Part", folder)
     local att1 = Instance.new("Attachment", part)
     part.Anchored = true; part.CanCollide = false; part.Transparency = 1
-    return hrp, att1
+    part.Size = Vector3.new(0.1, 0.1, 0.1)
+    return part, att1
 end
-if not getgenv().Network then
-    getgenv().Network = { BaseParts = {}, Velocity = Vector3.new(14.46262424, 14.46262424, 14.46262424) }
-    Network.RetainPart = function(part)
-        if typeof(part) == "Instance" and part:IsA("BasePart") and part:IsDescendantOf(Workspace) then
-            table.insert(Network.BaseParts, part)
-            part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
-            part.CanCollide = false
-        end
-    end
-    RunService.Heartbeat:Connect(function()
-        pcall(function() sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge) end)
-        for _, part in pairs(Network.BaseParts) do
-            if part:IsDescendantOf(Workspace) then part.Velocity = Network.Velocity end
-        end
-    end)
-end
-local function ForcePart(v, attachment1)
+
+local function bhForcePart(v, attachment1)
     if v:IsA("Part") and not v.Anchored and not v.Parent:FindFirstChild("Humanoid") and not v.Parent:FindFirstChild("Head") and v.Name ~= "Handle" then
         for _, x in next, v:GetChildren() do
-            if x:IsA("BodyAngularVelocity") or x:IsA("BodyForce") or x:IsA("BodyGyro") or x:IsA("BodyPosition") or x:IsA("BodyThrust") or x:IsA("BodyVelocity") or x:IsA("RocketPropulsion") then x:Destroy() end
+            if x:IsA("BodyAngularVelocity") or x:IsA("BodyForce") or x:IsA("BodyGyro")
+                or x:IsA("BodyPosition") or x:IsA("BodyThrust") or x:IsA("BodyVelocity")
+                or x:IsA("RocketPropulsion") then
+                x:Destroy()
+            end
         end
         if v:FindFirstChild("Attachment") then v:FindFirstChild("Attachment"):Destroy() end
         if v:FindFirstChild("AlignPosition") then v:FindFirstChild("AlignPosition"):Destroy() end
@@ -1186,31 +1174,48 @@ local function ForcePart(v, attachment1)
         local AlignPosition = Instance.new("AlignPosition", v)
         local Attachment2 = Instance.new("Attachment", v)
         Torque.Attachment0 = Attachment2
-        AlignPosition.MaxForce = math.huge; AlignPosition.MaxVelocity = math.huge
+        AlignPosition.MaxForce = math.huge
+        AlignPosition.MaxVelocity = math.huge
         AlignPosition.Responsiveness = 500
-        AlignPosition.Attachment0 = Attachment2; AlignPosition.Attachment1 = attachment1
+        AlignPosition.Attachment0 = Attachment2
+        AlignPosition.Attachment1 = attachment1
     end
 end
-button(troll, "Black Hole", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
-    blackHoleActive = not blackHoleActive
-    notify(blackHoleActive and "Black Hole ativado." or "Black Hole desativado.")
-    if blackHoleActive then
-        local hrp, att1 = setupBlackHolePlayer()
-        attachment1Global = att1
-        for _, v in next, Workspace:GetDescendants() do ForcePart(v, att1) end
-        Workspace.DescendantAdded:Connect(function(v) if blackHoleActive then ForcePart(v, att1) end end)
+
+button(troll, "🕳️ Black Hole (dentro do alvo)", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    if not selectedPlayer or not selectedPlayer.Character then
+        notify("Selecione um jogador alvo primeiro.")
+        return
+    end
+    blackHoleTargetActive = not blackHoleTargetActive
+    bhTargetUser = selectedPlayer.Name
+    notify(blackHoleTargetActive and ("Black Hole ATIVADO em: "..bhTargetUser) or "Black Hole desativado")
+
+    if blackHoleTargetActive then
+        local part, att1 = setupBlackHoleTarget()
+        bhAttachment1Global = att1
+        for _, v in next, Workspace:GetDescendants() do bhForcePart(v, att1) end
+        Workspace.DescendantAdded:Connect(function(v)
+            if blackHoleTargetActive then bhForcePart(v, att1) end
+        end)
         spawn(function()
-            while blackHoleActive and RunService.RenderStepped:Wait() do
-                angle = angle + math.rad(2)
-                local ox = math.cos(angle) * radius
-                local oz = math.sin(angle) * radius
-                if hrp and att1 then att1.WorldCFrame = hrp.CFrame * CFrame.new(ox, 0, oz) end
+            while blackHoleTargetActive and RunService.RenderStepped:Wait() do
+                bhAngle = bhAngle + math.rad(4)
+                local offsetX = math.cos(bhAngle) * bhRadius
+                local offsetZ = math.sin(bhAngle) * bhRadius
+                if selectedPlayer and selectedPlayer.Character then
+                    local hrp = selectedPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        att1.WorldCFrame = hrp.CFrame * CFrame.new(offsetX, 0, offsetZ)
+                    end
+                end
             end
         end)
     else
-        if attachment1Global then attachment1Global.WorldCFrame = CFrame.new(0, -1000, 0) end
+        if bhAttachment1Global then bhAttachment1Global.WorldCFrame = CFrame.new(0, -1000, 0) end
     end
 end)
+
 button(troll, "TP Tool (Clique para Teleportar)", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     tpToolEnabled = not tpToolEnabled
     notify(tpToolEnabled and "TP Tool ativado." or "TP Tool desativado.")
@@ -1227,7 +1232,9 @@ button(troll, "TP Tool (Clique para Teleportar)", UDim2.new(1, -4, 0, 34), UDim2
     end
 end, true)
 
--- 4. FUN
+-- ============================================================
+-- 4. FUN (inclui Tornado original)
+-- ============================================================
 local fun = newPage("Fun")
 pageTitle(fun, "Fun & Diversão")
 button(fun, "Dance", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
@@ -1255,7 +1262,129 @@ button(fun, "Invisível (Invis GUI)", UDim2.new(1, -4, 0, 34), UDim2.new(), func
     notify("Invisibilidade executada.")
 end)
 
+-- === TORNADO ORIGINAL ===
+local tornadoActive = false
+local tornadoRadius = 50
+local tornadoHeight = 5
+local tornadoRotationSpeed = 0.25
+local tornadoAttractionStrength = 750
+local tornadoParts = {}
+
+if not getgenv().Network then
+    getgenv().Network = { BaseParts = {}, Velocity = Vector3.new(14.46262424, 14.46262424, 14.46262424) }
+    Network.RetainPart = function(Part)
+        if typeof(Part) == "Instance" and Part:IsA("BasePart") and Part:IsDescendantOf(Workspace) then
+            table.insert(Network.BaseParts, Part)
+            Part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
+            Part.CanCollide = false
+        end
+    end
+    RunService.Heartbeat:Connect(function()
+        pcall(function() sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge) end)
+        for _, Part in pairs(Network.BaseParts) do
+            if Part:IsDescendantOf(Workspace) then Part.Velocity = Network.Velocity end
+        end
+    end)
+end
+
+local function RetainPart(Part)
+    if Part:IsA("BasePart") and not Part.Anchored and Part:IsDescendantOf(workspace) then
+        if Part.Parent == LocalPlayer.Character or Part:IsDescendantOf(LocalPlayer.Character) then return false end
+        Part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
+        Part.CanCollide = false
+        return true
+    end
+    return false
+end
+local function addPart(part)
+    if RetainPart(part) then
+        if not table.find(tornadoParts, part) then table.insert(tornadoParts, part) end
+    end
+end
+local function removePart(part)
+    local index = table.find(tornadoParts, part)
+    if index then table.remove(tornadoParts, index) end
+end
+for _, part in pairs(workspace:GetDescendants()) do addPart(part) end
+workspace.DescendantAdded:Connect(addPart)
+workspace.DescendantRemoving:Connect(removePart)
+
+RunService.Heartbeat:Connect(function()
+    if not tornadoActive then return end
+    local targetHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if targetHRP then
+        local center = targetHRP.Position
+        for _, part in pairs(tornadoParts) do
+            if part.Parent and not part.Anchored then
+                local pos = part.Position
+                local distance = (Vector3.new(pos.X, center.Y, pos.Z) - center).Magnitude
+                local angle = math.atan2(pos.Z - center.Z, pos.X - center.X)
+                local newAngle = angle + math.rad(tornadoRotationSpeed)
+                local targetPos = Vector3.new(
+                    center.X + math.cos(newAngle) * math.min(tornadoRadius, distance),
+                    center.Y + (tornadoHeight * (math.abs(math.sin((pos.Y - center.Y) / tornadoHeight)))),
+                    center.Z + math.sin(newAngle) * math.min(tornadoRadius, distance)
+                )
+                local dir = (targetPos - part.Position).unit
+                part.Velocity = dir * tornadoAttractionStrength
+            end
+        end
+    end
+end)
+
+button(fun, "🌪️ Tornado (self)", UDim2.new(1, -4, 0, 38), UDim2.new(), function()
+    tornadoActive = not tornadoActive
+    notify(tornadoActive and "🌪️ Tornado ATIVADO!" or "🌪️ Tornado desativado")
+end)
+
+-- Helper para popups numéricos
+local function numericPopup(titleText, hintText, currentVal, callback, minV, maxV)
+    local screen = Instance.new("ScreenGui", PlayerGui)
+    screen.Name = "TornadoNumPrompt"
+    screen.ResetOnSpawn = false
+    local bg = Instance.new("TextButton")
+    bg.Size = UDim2.new(1, 0, 1, 0); bg.BackgroundColor3 = Color3.new(0,0,0)
+    bg.BackgroundTransparency = 0.5; bg.BorderSizePixel = 0; bg.Text = ""
+    bg.Parent = screen
+    local box = Instance.new("Frame")
+    box.Size = UDim2.new(0, 320, 0, 140); box.Position = UDim2.new(0.5, -160, 0.5, -70)
+    box.BackgroundColor3 = COLORS.bg; box.BorderSizePixel = 0
+    corner(box, 10); stroke(box, COLORS.red, 1.5); box.Parent = screen
+    local tl = label(box, titleText.." (atual: "..currentVal..")", UDim2.new(1, -20, 0, 28), UDim2.new(0, 10, 0, 8), 14)
+    tl.Font = Enum.Font.GothamBold
+    label(box, hintText, UDim2.new(1, -20, 0, 16), UDim2.new(0, 10, 0, 34), 11, COLORS.muted)
+    local inp = textbox(box, "Novo valor...", UDim2.new(1, -20, 0, 34), UDim2.new(0, 10, 0, 54))
+    inp:CaptureFocus()
+    local function aplicar()
+        local n = tonumber(inp.Text)
+        if n then callback(math.clamp(n, minV, maxV)) end
+        screen:Destroy()
+    end
+    button(box, "Aplicar", UDim2.new(0.45, -5, 0, 30), UDim2.new(0, 10, 1, -40), aplicar)
+    button(box, "Cancelar", UDim2.new(0.45, -5, 0, 30), UDim2.new(0.55, 5, 1, -40), function() screen:Destroy() end, true)
+    inp.FocusLost:Connect(function(enter) if enter then aplicar() end end)
+    bg.Activated:Connect(function() screen:Destroy() end)
+end
+
+button(fun, "⚙️ Raio do Tornado", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    numericPopup("🌪️ Raio do Tornado", "1 - 10000", tornadoRadius, function(v)
+        tornadoRadius = v; notify("Raio: "..v)
+    end, 1, 10000)
+end, true)
+button(fun, "⚡ Velocidade do Tornado", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    numericPopup("⚡ Velocidade", "0.01 - 5 (0.25 = padrão)", tornadoRotationSpeed, function(v)
+        tornadoRotationSpeed = v; notify("Velocidade: "..v)
+    end, 0.01, 5)
+end, true)
+button(fun, "📏 Altura do Tornado", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    numericPopup("📏 Altura", "1 - 50 (5 = padrão)", tornadoHeight, function(v)
+        tornadoHeight = v; notify("Altura: "..v)
+    end, 1, 50)
+end, true)
+
+-- ============================================================
 -- 5. PLAYER
+-- ============================================================
 local playerPage = newPage("Player")
 pageTitle(playerPage, "Configurações de Player")
 local noclipActive = false
@@ -1291,7 +1420,9 @@ button(playerPage, "Resetar Personagem", UDim2.new(1, -4, 0, 34), UDim2.new(), f
     local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
     if hum then hum.Health = 0 end
 end, true)
+-- ============================================================
 -- 6. ESP
+-- ============================================================
 local espPage = newPage("Esp")
 pageTitle(espPage, "ESP Geral & MM2")
 local espEnabled = false
@@ -1325,7 +1456,9 @@ button(espPage, "ESP MurderMystery2", UDim2.new(1, -4, 0, 34), UDim2.new(), func
     notify("ESP MM2 carregado.")
 end)
 
+-- ============================================================
 -- 7. FE
+-- ============================================================
 local fe = newPage("FE")
 pageTitle(fe, "Utilidades FE")
 button(fe, "FE Jerk Off", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
@@ -1365,7 +1498,9 @@ button(fe, "FE Car v4", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     notify("FE Car v4 executado.")
 end)
 
+-- ============================================================
 -- 8. SCRIPTS
+-- ============================================================
 local scriptsPage = newPage("Scripts")
 pageTitle(scriptsPage, "Scripts Externos")
 button(scriptsPage, "Carregar Ghost Hub", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
@@ -1377,7 +1512,9 @@ button(scriptsPage, "VFly + Noclip", UDim2.new(1, -4, 0, 36), UDim2.new(), funct
     pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/makkurokurosukescript/VFly-gui/refs/heads/main/VFly%20gui", true))() end)
 end)
 
--- 9. PROTEÇÃO
+-- ============================================================
+-- 9. PROTEÇÃO (Anti Fling + Proteção contra C#)
+-- ============================================================
 local protecao = newPage("Proteção")
 pageTitle(protecao, "Proteções e Segurança")
 local antiFlingActive = false
@@ -1399,7 +1536,79 @@ RunService.Heartbeat:Connect(function()
 end)
 infoCard(protecao, "Modo Anti Fling", "Anula física anômala e impulsos excessivos.")
 
+button(protecao, "🛡️ Proteção contra C#", UDim2.new(1, -4, 0, 42), UDim2.new(), function()
+    gui.Enabled = false
+    local blackout = Instance.new("ScreenGui")
+    blackout.Name = "CSharpProtectionBlackout"
+    blackout.ResetOnSpawn = false
+    blackout.IgnoreGuiInset = true
+    blackout.DisplayOrder = 999999
+    blackout.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    blackout.Parent = PlayerGui
+
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, 0, 1, 0)
+    bg.Position = UDim2.new(0, 0, 0, 0)
+    bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    bg.BorderSizePixel = 0
+    bg.ZIndex = 1
+    bg.Parent = blackout
+
+    local mainText = Instance.new("TextLabel")
+    mainText.Size = UDim2.new(1, -80, 0, 120)
+    mainText.Position = UDim2.new(0, 40, 0.35, -60)
+    mainText.BackgroundTransparency = 1
+    mainText.Text = "Jadson Adriel"
+    mainText.TextColor3 = Color3.fromRGB(255, 40, 40)
+    mainText.Font = Enum.Font.GothamBlack
+    mainText.TextSize = 52
+    mainText.TextWrapped = true
+    mainText.ZIndex = 2
+    mainText.Parent = bg
+
+    local subText = Instance.new("TextLabel")
+    subText.Size = UDim2.new(1, -80, 0, 80)
+    subText.Position = UDim2.new(0, 40, 0.5, 10)
+    subText.BackgroundTransparency = 1
+    subText.Text = "HTML é melhor do que C# e você entendeu a referência"
+    subText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    subText.Font = Enum.Font.GothamBold
+    subText.TextSize = 24
+    subText.TextWrapped = true
+    subText.ZIndex = 2
+    subText.Parent = bg
+
+    task.spawn(function()
+        while blackout.Parent do
+            mainText.TextColor3 = Color3.fromRGB(255, 40, 40)
+            task.wait(0.15)
+            mainText.TextColor3 = Color3.fromRGB(255, 255, 255)
+            task.wait(0.15)
+        end
+    end)
+
+    -- Segurar RightShift por 1s para sair
+    task.spawn(function()
+        local held = 0
+        local conn
+        conn = RunService.Heartbeat:Connect(function(dt)
+            if UserInputService:IsKeyDown(Enum.KeyCode.RightShift) then
+                held = held + dt
+                if held > 1 then
+                    blackout:Destroy()
+                    gui.Enabled = true
+                    conn:Disconnect()
+                end
+            else
+                held = 0
+            end
+        end)
+    end)
+end, false)
+
+-- ============================================================
 -- 10. SETTINGS
+-- ============================================================
 local settings = newPage("Settings")
 pageTitle(settings, "Configurações")
 local scaleSteps = {0.6, 0.75, 1}
@@ -1414,7 +1623,9 @@ button(settings, "Centralizar Janela", UDim2.new(1, -4, 0, 36), UDim2.new(), fun
     main.Position = UDim2.new(0.5, -main.AbsoluteSize.X/2, 0.5, -main.AbsoluteSize.Y/2)
 end, true)
 
--- === NAVEGAÇÃO ===
+-- ============================================================
+-- NAVEGAÇÃO
+-- ============================================================
 for _, entry in ipairs({
     {"Home", "⌂"}, {"Comandos", "⌨"}, {"Troll", "☠"}, {"Fun", "★"},
     {"Player", "☺"}, {"Esp", "👁"}, {"FE", "⚡"}, {"Scripts", "▤"},
@@ -1425,7 +1636,7 @@ activePage = pages.Home
 activePage.Visible = true
 navButtons.Home.BackgroundColor3 = COLORS.red2
 
--- === ARRASTAR JANELA PRINCIPAL ===
+-- Arrastar janela principal
 local dragging, dragStart, startPos
 header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -1444,7 +1655,9 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- === MINIMIZAR COM QUADRADINHO "S" ===
+-- ============================================================
+-- MINIMIZAR COM QUADRADINHO "S"
+-- ============================================================
 local miniBtn = make("TextButton", {
     Name = "SiriguelaMiniBtn",
     Size = UDim2.new(0, 44, 0, 44),
@@ -1465,14 +1678,14 @@ stroke(miniBtn, COLORS.red, 1.5)
 local miniDragging = false
 local miniDragStart = nil
 local miniStartPos = nil
-local miniClickStart = nil
+local miniMoved = false
 
 miniBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         miniDragging = true
         miniDragStart = input.Position
         miniStartPos = miniBtn.Position
-        miniClickStart = input.Position
+        miniMoved = false
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 miniDragging = false
@@ -1484,6 +1697,7 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if miniDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - miniDragStart
+        if delta.Magnitude > 6 then miniMoved = true end
         miniBtn.Position = UDim2.new(
             miniStartPos.X.Scale, miniStartPos.X.Offset + delta.X,
             miniStartPos.Y.Scale, miniStartPos.Y.Offset + delta.Y
@@ -1491,38 +1705,33 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-local function doMinimize()
-    main.Visible = false
-    miniBtn.Visible = true
-end
-local function doRestore()
-    main.Visible = true
-    miniBtn.Visible = false
-end
-
-minimize.Activated:Connect(function() doMinimize() end)
-
-miniBtn.Activated:Connect(function()
-    if miniClickStart then
-        local mouseNow = UserInputService:GetMouseLocation()
-        local delta = (mouseNow - miniClickStart).Magnitude
-        if delta < 8 then
-            doRestore()
-        end
-    else
-        doRestore()
+miniBtn.MouseButton1Click:Connect(function()
+    if not miniMoved then
+        main.Visible = true
+        miniBtn.Visible = false
     end
 end)
 
--- === TECLA RIGHTSHIFT PARA TOGGLE ===
+minimize.Activated:Connect(function()
+    main.Visible = false
+    miniBtn.Visible = true
+end)
+
+-- RightShift alterna minimizado/visível
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     if input.KeyCode == Enum.KeyCode.RightShift and gui.Parent then
-        if main.Visible then doMinimize() else doRestore() end
+        if main.Visible then
+            main.Visible = false
+            miniBtn.Visible = true
+        else
+            main.Visible = true
+            miniBtn.Visible = false
+        end
     end
 end)
 
--- === CARREGAR SIRIGUELA ADMIN (via arquivo local ou URL) ===
+-- Carregar Siriguela Admin (opcional)
 task.spawn(function()
     pcall(function()
         local adminSrc = nil
@@ -1531,14 +1740,9 @@ task.spawn(function()
                 if isfile(path) then adminSrc = readfile(path) break end
             end
         end
-        if not adminSrc then
-            pcall(function()
-                adminSrc = game:HttpGet("https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPO/main/SiriguelaAdmin.lua")
-            end)
-        end
         if adminSrc then
             loadstring(adminSrc)()
-            print("[Siriguela Hub] Admin carregado.")
+            print("[Siriguela Hub] Admin externo carregado.")
         end
     end)
 end)
