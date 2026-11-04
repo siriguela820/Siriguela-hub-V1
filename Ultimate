@@ -1,5 +1,7 @@
 --[[
-    SIRIGUELA HUB ULTIMATE - Versão Completa Definitiva
+    SIRIGUELA HUB ULTIMATE - Versão Completa Definitiva (FINAL)
+    PARTE 1/3 - Base, helpers, Home
+    COLE AS 3 PARTES EM UM ÚNICO ARQUIVO .LUA
 ]]
 
 local Players = game:GetService("Players")
@@ -11,6 +13,7 @@ local TextService = game:GetService("TextService")
 local Workspace = game:GetService("Workspace")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
+local StarterGui = game:GetService("StarterGui")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -225,7 +228,7 @@ end
 
 local function notify(message)
     pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
+        StarterGui:SetCore("SendNotification", {
             Title = "Siriguela Hub",
             Text = message,
             Duration = 2,
@@ -240,6 +243,8 @@ local oldCameraSubject = nil
 local tpToolEnabled = false
 local tpToolConnection = nil
 
+if not getgenv().SiriguelaCmdHistory then getgenv().SiriguelaCmdHistory = {} end
+
 local function stopViewing()
     local camera = workspace.CurrentCamera
     if camera and oldCameraSubject then camera.CameraSubject = oldCameraSubject end
@@ -250,9 +255,366 @@ end
 -- 1. HOME
 local home = newPage("Home")
 pageTitle(home, "Painel Principal")
-infoCard(home, "Status", "Siriguela Hub Ultimate carregado com sucesso.")
+infoCard(home, "Status", "Siriguela Hub Ultimate carregado com sucesso. Use a aba Comandos para o Siriguela Admin.")-- 2. COMANDOS (Aba inteligente com filtro, lista, popup de argumentos)
+local cmdPage = newPage("Comandos")
+pageTitle(cmdPage, "Comandos do Siriguela Admin")
 
--- 2. TROLL
+local commandList = {
+    {cmd="kill", desc="Mata o jogador (precisa tool)", arg="player"},
+    {cmd="bring", desc="Traz o jogador até você (precisa tool)", arg="player"},
+    {cmd="spin", desc="Faz você e o jogador girar (precisa tool)", arg="player"},
+    {cmd="unspin", desc="Para o spin", arg="none"},
+    {cmd="attach", desc="Anexa você ao jogador (precisa tool)", arg="player"},
+    {cmd="unattach", desc="Desanexa do jogador", arg="player"},
+    {cmd="follow", desc="Segue o jogador", arg="player"},
+    {cmd="unfollow", desc="Para de seguir", arg="none"},
+    {cmd="freefall", desc="Joga você e o jogador no ar (precisa tool)", arg="player"},
+    {cmd="trail", desc="Fica na frente do jogador", arg="player"},
+    {cmd="untrail", desc="Para o trail", arg="none"},
+    {cmd="orbit", desc="Orbita o jogador", arg="player"},
+    {cmd="unorbit", desc="Para de orbitar", arg="none"},
+    {cmd="fling", desc="Arremessa o jogador (precisa tool)", arg="player"},
+    {cmd="unfling", desc="Para o fling", arg="none"},
+    {cmd="void", desc="Teleporta o jogador para o void (precisa tool)", arg="player"},
+    {cmd="annoy", desc="Loop TP no jogador", arg="player"},
+    {cmd="unannoy", desc="Para o annoy", arg="none"},
+    {cmd="headwalk", desc="Loop TP na cabeça do jogador", arg="player"},
+    {cmd="unheadwalk", desc="Para o headwalk", arg="none"},
+    {cmd="view", desc="Muda a câmera para o jogador", arg="player"},
+    {cmd="unview", desc="Restaura a câmera", arg="none"},
+    {cmd="goto", desc="Teleporta até o jogador", arg="player"},
+    {cmd="rkill", desc="Mata você e o jogador (precisa tool)", arg="player"},
+    {cmd="cbring", desc="Traz o jogador pra frente de você", arg="player"},
+    {cmd="uncbring", desc="Para o cbring", arg="none"},
+    {cmd="swap", desc="Troca de posição com o jogador (precisa tool)", arg="player"},
+    {cmd="givetool", desc="Dá a tool equipada ao jogador", arg="player"},
+    {cmd="givealltools", desc="Dá todas as tools ao jogador", arg="player"},
+    {cmd="glitch", desc="Glitcha você e o jogador", arg="player"},
+    {cmd="unglitch", desc="Desglitcha", arg="none"},
+    {cmd="carpet", desc="Vira tapete do jogador", arg="player"},
+    {cmd="uncarpet", desc="Para o carpet", arg="none"},
+    {cmd="stare", desc="Olha fixamente o jogador", arg="player"},
+    {cmd="unstare", desc="Para de olhar", arg="none"},
+    {cmd="cfreeze", desc="Congela o jogador no seu cliente", arg="player"},
+    {cmd="uncfreeze", desc="Descongela o jogador", arg="player"},
+    {cmd="bang", desc="Animação 18+ no jogador", arg="player"},
+    {cmd="unbang", desc="Para a animação", arg="none"},
+    {cmd="age", desc="Mostra idade da conta no chat", arg="player"},
+    {cmd="id", desc="Mostra ID da conta no chat", arg="player"},
+    {cmd=".age", desc="Mostra idade da conta (privado)", arg="player"},
+    {cmd=".id", desc="Mostra ID da conta (privado)", arg="player"},
+    {cmd="speed", desc="Velocidade de caminhada (default 16)", arg="number"},
+    {cmd="ws", desc="Atalho para speed", arg="number"},
+    {cmd="jumppower", desc="Força do pulo (default 50)", arg="number"},
+    {cmd="jp", desc="Atalho para jumppower", arg="number"},
+    {cmd="hipheight", desc="Altura do flutuar (default 0)", arg="number"},
+    {cmd="hh", desc="Atalho para hipheight", arg="number"},
+    {cmd="default", desc="Reseta speed, jp e hh", arg="none"},
+    {cmd="noclip", desc="Atravessa paredes", arg="none"},
+    {cmd="clip", desc="Desativa noclip", arg="none"},
+    {cmd="fly", desc="Modo voar (WASD)", arg="none"},
+    {cmd="unfly", desc="Desativa voo", arg="none"},
+    {cmd="flyspeed", desc="Velocidade do voo", arg="number"},
+    {cmd="gravity", desc="Muda a gravidade (default 196.2)", arg="number"},
+    {cmd="state", desc="Muda estado do Humanoid", arg="number"},
+    {cmd="unstate", desc="Para de mudar estado", arg="none"},
+    {cmd="god", desc="FE Godmode (usar grespawn p/ sair)", arg="none"},
+    {cmd="grespawn", desc="Respawn FE (remove godmode)", arg="none"},
+    {cmd="respawn", desc="Respawn alternativo", arg="none"},
+    {cmd="reset", desc="Reseta o personagem", arg="none"},
+    {cmd="drophats", desc="Dropar chapéus", arg="none"},
+    {cmd="droptool", desc="Dropar tool equipada", arg="none"},
+    {cmd="loopdhats", desc="Loop dropar chapéus", arg="none"},
+    {cmd="unloopdhats", desc="Para loop dropar chapéus", arg="none"},
+    {cmd="loopdtool", desc="Loop dropar tools", arg="none"},
+    {cmd="unloopdtool", desc="Para loop dropar tools", arg="none"},
+    {cmd="invisible", desc="Fica invisível (reset p/ sair)", arg="none"},
+    {cmd="nolimbs", desc="Remove braços e pernas", arg="none"},
+    {cmd="blockhead", desc="Remove mesh da cabeça", arg="none"},
+    {cmd="rmeshhats", desc="Remove mesh dos chapéus", arg="none"},
+    {cmd="blockhats", desc="Atalho rmeshhats", arg="none"},
+    {cmd="rmeshtool", desc="Remove mesh da tool", arg="none"},
+    {cmd="blocktool", desc="Atalho rmeshtool", arg="none"},
+    {cmd="spinner", desc="Faz girar", arg="none"},
+    {cmd="nospinner", desc="Para de girar", arg="none"},
+    {cmd="pstand", desc="Platform stand on", arg="none"},
+    {cmd="unpstand", desc="Platform stand off", arg="none"},
+    {cmd="sit", desc="Senta", arg="none"},
+    {cmd="stopsit", desc="Impede de sentar", arg="none"},
+    {cmd="gosit", desc="Permite sentar", arg="none"},
+    {cmd="disable", desc="Remove humanoid", arg="none"},
+    {cmd="enable", desc="Restaura humanoid", arg="none"},
+    {cmd="savepos", desc="Salva posição atual", arg="none"},
+    {cmd="loadpos", desc="Teleporta para posição salva", arg="none"},
+    {cmd="fixcam", desc="Conserta a câmera", arg="none"},
+    {cmd="fecheck", desc="Verifica se o jogo é FE", arg="none"},
+    {cmd="version", desc="Mostra versão do Admin", arg="none"},
+    {cmd="gameid", desc="Mostra ID do jogo", arg="none"},
+    {cmd="chat", desc="Envia mensagem no chat", arg="text"},
+    {cmd="spam", desc="Spamma uma mensagem", arg="text"},
+    {cmd="unspam", desc="Para o spam", arg="none"},
+    {cmd="spamwait", desc="Delay do spam (segundos)", arg="number"},
+    {cmd="pmspam", desc="Spamma DM para jogador", arg="player"},
+    {cmd="unpmspam", desc="Para o pmspam", arg="none"},
+    {cmd="logchat", desc="Loga todo chat no console", arg="none"},
+    {cmd="unlogchat", desc="Para de logar chat", arg="none"},
+    {cmd="btools", desc="Gives btools (client)", arg="none"},
+    {cmd="unlockws", desc="Desbloqueia workspace", arg="none"},
+    {cmd="lockws", desc="Bloqueia workspace", arg="none"},
+    {cmd="wsvis", desc="Transparência do workspace (0-1)", arg="number"},
+    {cmd="removeinvis", desc="Remove paredes invisíveis", arg="none"},
+    {cmd="removefog", desc="Remove fog", arg="none"},
+    {cmd="delobj", desc="Deleta objeto por nome", arg="text"},
+    {cmd="bringobj", desc="Traz objeto por nome", arg="text"},
+    {cmd="bringmod", desc="Traz modelo por nome", arg="text"},
+    {cmd="deldecal", desc="Remove todos os decals", arg="none"},
+    {cmd="getplrs", desc="Printa jogadores no console (F9)", arg="none"},
+    {cmd="remotes", desc="Printa remotes no console", arg="none"},
+    {cmd="noremotes", desc="Para de printar remotes", arg="none"},
+    {cmd="tpdefault", desc="Para todos os loop TP", arg="none"},
+    {cmd="clicktp", desc="Clique+E para teleportar", arg="none"},
+    {cmd="noclicktp", desc="Desativa click TP", arg="none"},
+    {cmd="clickdel", desc="Clique+E para deletar", arg="none"},
+    {cmd="noclickdel", desc="Desativa click delete", arg="none"},
+    {cmd="toolson", desc="Auto-coleta tools dropadas", arg="none"},
+    {cmd="toolsoff", desc="Para auto-coleta", arg="none"},
+    {cmd="reach", desc="Aumenta alcance da arma", arg="number"},
+    {cmd="reachd", desc="Reach padrão", arg="none"},
+    {cmd="noreach", desc="Remove reach", arg="none"},
+    {cmd="anim", desc="Aplica animação por ID", arg="text"},
+    {cmd="animgui", desc="Abre GUI Energize", arg="none"},
+    {cmd="explorer", desc="Abre DEX Explorer", arg="none"},
+    {cmd="hypertotal", desc="Abre GUI Hypertotal", arg="none"},
+    {cmd="opfinality", desc="Abre GUI Opfinality", arg="none"},
+    {cmd="shutdown", desc="Tenta derrubar o servidor", arg="none"},
+    {cmd="prefix", desc="Muda o prefixo do Admin", arg="text"},
+    {cmd="cmds", desc="Abre lista de comandos do Admin", arg="none"},
+    {cmd="delcmdbar", desc="Remove a command bar do Admin", arg="none"},
+}
+
+local function execNative(cmdText)
+    local lp = LocalPlayer
+    local char = lp.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local args = cmdText:split(" ")
+    local cmd = args[1]:lower()
+
+    local function getPlayerByName(name)
+        if not name then return nil end
+        if name:lower() == "all" then return "all" end
+        if name:lower() == "others" then return "others" end
+        if name:lower() == "me" then return lp end
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= lp and p.Name:lower():sub(1, #name) == name:lower() then return p end
+        end
+        return nil
+    end
+
+    local ok = false
+    if cmd == "speed" or cmd == "ws" then
+        local n = tonumber(args[2]); if n and hum then hum.WalkSpeed = n; ok = true end
+    elseif cmd == "jumppower" or cmd == "jp" then
+        local n = tonumber(args[2]); if n and hum then hum.UseJumpPower = true; hum.JumpPower = n; ok = true end
+    elseif cmd == "hipheight" or cmd == "hh" then
+        local n = tonumber(args[2]); if n and hum then hum.HipHeight = n; ok = true end
+    elseif cmd == "default" then
+        if hum then hum.WalkSpeed = 16; hum.UseJumpPower = true; hum.JumpPower = 50; hum.HipHeight = 0; ok = true end
+    elseif cmd == "noclip" then
+        getgenv()._noclip = true
+        if not getgenv()._noclipConn then
+            getgenv()._noclipConn = RunService.Stepped:Connect(function()
+                if getgenv()._noclip and lp.Character then
+                    for _, part in ipairs(lp.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then part.CanCollide = false end
+                    end
+                end
+            end)
+        end
+        ok = true
+    elseif cmd == "clip" then getgenv()._noclip = false; ok = true
+    elseif cmd == "reset" or cmd == "respawn" or cmd == "grespawn" then
+        if hum then hum.Health = 0; ok = true end
+    elseif cmd == "god" then
+        if hum then hum.Name = "1"; local l = char["1"]:Clone(); l.Parent = char; l.Name = "Humanoid"; task.wait(0.1); char["1"]:Destroy(); ok = true end
+    elseif cmd == "goto" then
+        local t = getPlayerByName(args[2])
+        if type(t) == "Instance" and t.Character and t.Character:FindFirstChild("HumanoidRootPart") and hrp then
+            hrp.CFrame = t.Character.HumanoidRootPart.CFrame; ok = true
+        elseif t == "all" or t == "others" then
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and hrp then
+                    hrp.CFrame = p.Character.HumanoidRootPart.CFrame; ok = true; break
+                end
+            end
+        end
+    elseif cmd == "view" then
+        local t = getPlayerByName(args[2])
+        if type(t) == "Instance" and t.Character then
+            local h = t.Character:FindFirstChildOfClass("Humanoid")
+            if h then workspace.CurrentCamera.CameraSubject = h; ok = true end
+        end
+    elseif cmd == "unview" or cmd == "fixcam" then
+        if hum then workspace.CurrentCamera.CameraSubject = hum; ok = true end
+    elseif cmd == "drophats" then
+        if char then for _, v in ipairs(char:GetChildren()) do if v:IsA("Accessory") or v:IsA("Hat") then v.Parent = workspace end end; ok = true end
+    elseif cmd == "droptool" then
+        if char then for _, v in ipairs(char:GetChildren()) do if v:IsA("Tool") then v.Parent = workspace end end; ok = true end
+    elseif cmd == "invisible" then
+        if char then for _, v in ipairs(char:GetDescendants()) do if v:IsA("BasePart") then v.Transparency = 1 end if v:IsA("Decal") then v.Transparency = 1 end end; ok = true end
+    elseif cmd == "removefog" then Lighting.FogStart = 0; Lighting.FogEnd = 999999999; ok = true
+    elseif cmd == "getplrs" then for _, p in ipairs(Players:GetPlayers()) do print(p.Name) end; ok = true
+    elseif cmd == "gravity" then local n = tonumber(args[2]); if n then workspace.Gravity = n; ok = true end
+    elseif cmd == "chat" then
+        local msg = cmdText:sub(6)
+        if msg ~= "" then
+            local rs = game:GetService("ReplicatedStorage")
+            if rs:FindFirstChild("DefaultChatSystemChatEvents") then rs.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All") end
+            ok = true
+        end
+    elseif cmd == "cmds" then
+        local g = game:GetService("CoreGui"):FindFirstChild("CMDS")
+        if g and g:FindFirstChild("CMDSFRAME") then g.CMDSFRAME.Visible = true end; ok = true
+    end
+    return ok
+end
+
+local function executeCommand(cmdText)
+    if not cmdText or cmdText == "" then notify("Digite um comando primeiro.") return end
+    cmdText = cmdText:gsub("^;%s*", "")
+    table.insert(getgenv().SiriguelaCmdHistory, 1, cmdText)
+    if #getgenv().SiriguelaCmdHistory > 30 then table.remove(getgenv().SiriguelaCmdHistory) end
+    local ok = execNative(cmdText)
+    if not ok then
+        pcall(function() if _G.SiriguelaAdminRun then _G.SiriguelaAdminRun(cmdText) end end)
+        notify("Enviado: ;" .. cmdText)
+    else
+        notify("Executado: " .. cmdText)
+    end
+    if _G.SiriguelaRefreshHistory then _G.SiriguelaRefreshHistory() end
+end
+
+local cmdInput = textbox(cmdPage, "Digite um comando... (ex: speed 100)", UDim2.new(1, -4, 0, 38), UDim2.new())
+button(cmdPage, "▶ Executar Comando", UDim2.new(1, -4, 0, 34), UDim2.new(), function() executeCommand(cmdInput.Text) cmdInput.Text = "" end)
+button(cmdPage, "Limpar Campo", UDim2.new(1, -4, 0, 30), UDim2.new(), function() cmdInput.Text = "" end, true)
+
+local historyCard = infoCard(cmdPage, "Histórico (últimos 5)", "Nenhum comando executado ainda.")
+function _G.SiriguelaRefreshHistory()
+    local txtLabel = historyCard:FindFirstChildWhichIsA("TextLabel", true)
+    if not txtLabel then return end
+    local h = getgenv().SiriguelaCmdHistory or {}
+    if #h == 0 then txtLabel.Text = "Nenhum comando executado ainda."
+    else
+        local t = ""
+        for i = 1, math.min(5, #h) do t = t .. (i > 1 and "\n" or "") .. i .. ". " .. h[i] end
+        txtLabel.Text = t
+    end
+end
+
+pageTitle(cmdPage, "Lista de Comandos (digite para filtrar)")
+local cmdListFrame = make("Frame", { Size = UDim2.new(1, -4, 0, 380), BackgroundColor3 = COLORS.panel, BorderSizePixel = 0 }, cmdPage)
+corner(cmdListFrame, 8)
+local cmdScroll = make("ScrollingFrame", {
+    Size = UDim2.new(1, -10, 1, -10), Position = UDim2.new(0, 5, 0, 5),
+    BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4,
+    ScrollBarImageColor3 = COLORS.red, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
+}, cmdListFrame)
+make("UIListLayout", {Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, cmdScroll)
+
+local function runCommandEntry(entry)
+    if entry.arg == "none" then executeCommand(entry.cmd) return end
+    local screen = Instance.new("ScreenGui", PlayerGui)
+    screen.Name = "SiriguelaArgPrompt"
+    screen.ResetOnSpawn = false
+
+    local bg = Instance.new("TextButton")
+    bg.Size = UDim2.new(1, 0, 1, 0)
+    bg.BackgroundColor3 = Color3.new(0, 0, 0)
+    bg.BackgroundTransparency = 0.5
+    bg.BorderSizePixel = 0
+    bg.Text = ""
+    bg.Parent = screen
+
+    local box = Instance.new("Frame")
+    box.Size = UDim2.new(0, 320, 0, 160)
+    box.Position = UDim2.new(0.5, -160, 0.5, -80)
+    box.BackgroundColor3 = COLORS.bg
+    box.BorderSizePixel = 0
+    corner(box, 10)
+    stroke(box, COLORS.red, 1.5)
+    box.Parent = screen
+
+    local tl = label(box, "Comando: " .. entry.cmd, UDim2.new(1, -20, 0, 28), UDim2.new(0, 10, 0, 8), 15)
+    tl.Font = Enum.Font.GothamBold
+
+    local hint = ""
+    if entry.arg == "player" then hint = "Nome do jogador (ou 'all'/'others'/'me')"
+    elseif entry.arg == "number" then hint = "Digite um número"
+    elseif entry.arg == "text" then hint = "Digite o texto" end
+    label(box, hint, UDim2.new(1, -20, 0, 18), UDim2.new(0, 10, 0, 36), 11, COLORS.muted)
+
+    local argInput = textbox(box, "...", UDim2.new(1, -20, 0, 34), UDim2.new(0, 10, 0, 58))
+    argInput:CaptureFocus()
+
+    button(box, "Executar", UDim2.new(0.45, -5, 0, 30), UDim2.new(0, 10, 1, -40), function()
+        local val = argInput.Text
+        if val == "" then notify("Digite um valor.") return end
+        screen:Destroy()
+        executeCommand(entry.cmd .. " " .. val)
+    end)
+    button(box, "Cancelar", UDim2.new(0.45, -5, 0, 30), UDim2.new(0.55, 5, 1, -40), function()
+        screen:Destroy()
+    end, true)
+
+    argInput.FocusLost:Connect(function(enter)
+        if enter and argInput.Text ~= "" then
+            local val = argInput.Text
+            screen:Destroy()
+            executeCommand(entry.cmd .. " " .. val)
+        end
+    end)
+    bg.Activated:Connect(function() screen:Destroy() end)
+end
+
+local function refreshCmdList(filter)
+    for _, child in ipairs(cmdScroll:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    filter = (filter or ""):lower()
+    local shown = 0
+    for _, entry in ipairs(commandList) do
+        local matches = filter == "" or entry.cmd:lower():find(filter, 1, true) or entry.desc:lower():find(filter, 1, true)
+        if matches then
+            shown = shown + 1
+            local btn = make("TextButton", {
+                Size = UDim2.new(1, -2, 0, 44),
+                BackgroundColor3 = COLORS.panel2, Text = "", BorderSizePixel = 0, AutoButtonColor = true,
+            }, cmdScroll)
+            corner(btn, 6)
+            local nameLbl = label(btn, entry.cmd, UDim2.new(1, -10, 0, 18), UDim2.new(0, 8, 0, 4), 13)
+            nameLbl.Font = Enum.Font.GothamBold
+            nameLbl.TextColor3 = COLORS.red
+            label(btn, entry.desc, UDim2.new(1, -10, 0, 18), UDim2.new(0, 8, 0, 22), 10, COLORS.muted)
+            btn.Activated:Connect(function() runCommandEntry(entry) end)
+        end
+    end
+    if shown == 0 then
+        local empty = label(cmdScroll, "Nenhum comando encontrado para: '" .. filter .. "'", UDim2.new(1, -4, 0, 40), UDim2.new(0, 4, 0, 4), 12, COLORS.muted)
+        empty.TextXAlignment = Enum.TextXAlignment.Center
+    end
+end
+
+cmdInput:GetPropertyChangedSignal("Text"):Connect(function() refreshCmdList(cmdInput.Text) end)
+cmdInput.FocusLost:Connect(function(enter)
+    if enter and cmdInput.Text ~= "" then
+        executeCommand(cmdInput.Text)
+        cmdInput.Text = ""
+    end
+end)
+refreshCmdList("")
+_G.SiriguelaRefreshHistory()
+
+-- 3. TROLL
 local troll = newPage("Troll")
 pageTitle(troll, "Troll & Kill")
 local playerSearch = textbox(troll, "Buscar jogador...", UDim2.new(1, -4, 0, 36), UDim2.new())
@@ -263,20 +625,12 @@ button(troll, "Atualizar Lista", UDim2.new(1, -4, 0, 34), UDim2.new(), function(
     notify("Lista de jogadores atualizada.")
 end, true)
 
-local playerList = make("Frame", {
-    Size = UDim2.new(1, -4, 0, 150),
-    BackgroundColor3 = COLORS.panel,
-    BorderSizePixel = 0,
-}, troll)
+local playerList = make("Frame", { Size = UDim2.new(1, -4, 0, 150), BackgroundColor3 = COLORS.panel, BorderSizePixel = 0 }, troll)
 corner(playerList, 8)
 local playerScroll = make("ScrollingFrame", {
-    Size = UDim2.new(1, -10, 1, -10),
-    Position = UDim2.new(0, 5, 0, 5),
-    BackgroundTransparency = 1,
-    BorderSizePixel = 0,
-    ScrollBarThickness = 4,
-    CanvasSize = UDim2.new(),
-    AutomaticCanvasSize = Enum.AutomaticSize.Y,
+    Size = UDim2.new(1, -10, 1, -10), Position = UDim2.new(0, 5, 0, 5),
+    BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4,
+    CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
 }, playerList)
 make("UIListLayout", {Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, playerScroll)
 
@@ -286,12 +640,11 @@ function refreshPlayers()
     end
     local query = string.lower(playerSearch.Text or "")
     for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and (query == "" or string.find(string.lower(plr.Name), query, 1, true)
-            or string.find(string.lower(plr.DisplayName), query, 1, true)) then
+        if plr ~= LocalPlayer and (query == "" or string.find(string.lower(plr.Name), query, 1, true) or string.find(string.lower(plr.DisplayName), query, 1, true)) then
             local b = button(playerScroll, plr.DisplayName .. " (@" .. plr.Name .. ")", UDim2.new(1, -2, 0, 31), UDim2.new(), function()
                 selectedPlayer = plr
-                local textLabel = selectedLabel:FindFirstChildWhichIsA("TextLabel")
-                if textLabel then textLabel.Text = "Alvo: " .. plr.Name end
+                local t = selectedLabel:FindFirstChildWhichIsA("TextLabel")
+                if t then t.Text = "Alvo: " .. plr.Name end
                 notify("Selecionado: " .. plr.Name)
             end, true)
             b.TextXAlignment = Enum.TextXAlignment.Left
@@ -308,46 +661,33 @@ refreshPlayers()
 
 button(troll, "View (Visualizar Câmera)", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     if not selectedPlayer or not selectedPlayer.Character then notify("Selecione um jogador válido.") return end
-    local targetHumanoid = selectedPlayer.Character:FindFirstChildOfClass("Humanoid")
-    local camera = workspace.CurrentCamera
-    if not targetHumanoid or not camera then return end
+    local th = selectedPlayer.Character:FindFirstChildOfClass("Humanoid")
+    local cam = workspace.CurrentCamera
+    if not th or not cam then return end
     if viewingPlayer then stopViewing() end
-    oldCameraSubject = camera.CameraSubject
-    camera.CameraSubject = targetHumanoid
+    oldCameraSubject = cam.CameraSubject
+    cam.CameraSubject = th
     viewingPlayer = true
     notify("Visualizando " .. selectedPlayer.Name)
 end)
-
-button(troll, "Restaurar Câmera", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
-    stopViewing()
-    notify("Câmera restaurada.")
-end, true)
-
+button(troll, "Restaurar Câmera", UDim2.new(1, -4, 0, 34), UDim2.new(), function() stopViewing(); notify("Câmera restaurada.") end, true)
 button(troll, "TP (Teleportar ao Alvo)", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     if not selectedPlayer or not selectedPlayer.Character or not selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        notify("Selecione um jogador válido.")
-        return
+        notify("Selecione um jogador válido.") return
     end
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        hrp.CFrame = selectedPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-        notify("Teleportado para " .. selectedPlayer.Name)
-    end
+    if hrp then hrp.CFrame = selectedPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0); notify("Teleportado para " .. selectedPlayer.Name) end
 end)
-
 button(troll, "Fling Yeet", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     if not selectedPlayer or not selectedPlayer.Character or not selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        notify("Selecione um alvo na lista.")
-        return
+        notify("Selecione um alvo na lista.") return
     end
     local character = LocalPlayer.Character
     local hrp = character and character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-
     local target = selectedPlayer
     local bt = Instance.new("BodyThrust", hrp)
     bt.Force = Vector3.new(4000, 4000, 4000)
-    
     task.spawn(function()
         while target.Character and target.Character:FindFirstChild("HumanoidRootPart") do
             hrp.CFrame = target.Character.HumanoidRootPart.CFrame
@@ -358,20 +698,16 @@ button(troll, "Fling Yeet", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     end)
     notify("Fling Yeet aplicado em " .. target.Name)
 end)
-
 button(troll, "Toque Fling", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
-    pcall(function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/LgZwZ7ZB", true))()
-    end)
+    pcall(function() loadstring(game:HttpGet("https://pastebin.com/raw/LgZwZ7ZB", true))() end)
     notify("Toque Fling ativado!")
 end)
 
--- Black Hole Base Script Integrado
+-- Black Hole
 local blackHoleActive = false
 local angle = 1
 local radius = 10
 local attachment1Global = nil
-
 local function setupBlackHolePlayer()
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local hrp = character:WaitForChild("HumanoidRootPart")
@@ -383,7 +719,6 @@ local function setupBlackHolePlayer()
     part.Transparency = 1
     return hrp, att1
 end
-
 if not getgenv().Network then
     getgenv().Network = { BaseParts = {}, Velocity = Vector3.new(14.46262424, 14.46262424, 14.46262424) }
     Network.RetainPart = function(part)
@@ -400,19 +735,15 @@ if not getgenv().Network then
         end
     end)
 end
-
 local function ForcePart(v, attachment1)
     if v:IsA("Part") and not v.Anchored and not v.Parent:FindFirstChild("Humanoid") and not v.Parent:FindFirstChild("Head") and v.Name ~= "Handle" then
         for _, x in next, v:GetChildren() do
-            if x:IsA("BodyAngularVelocity") or x:IsA("BodyForce") or x:IsA("BodyGyro") or x:IsA("BodyPosition") or x:IsA("BodyThrust") or x:IsA("BodyVelocity") or x:IsA("RocketPropulsion") then
-                x:Destroy()
-            end
+            if x:IsA("BodyAngularVelocity") or x:IsA("BodyForce") or x:IsA("BodyGyro") or x:IsA("BodyPosition") or x:IsA("BodyThrust") or x:IsA("BodyVelocity") or x:IsA("RocketPropulsion") then x:Destroy() end
         end
         if v:FindFirstChild("Attachment") then v:FindFirstChild("Attachment"):Destroy() end
         if v:FindFirstChild("AlignPosition") then v:FindFirstChild("AlignPosition"):Destroy() end
         if v:FindFirstChild("Torque") then v:FindFirstChild("Torque"):Destroy() end
         v.CanCollide = false
-        
         local Torque = Instance.new("Torque", v)
         Torque.Torque = Vector3.new(1000000, 1000000, 1000000)
         local AlignPosition = Instance.new("AlignPosition", v)
@@ -425,7 +756,6 @@ local function ForcePart(v, attachment1)
         AlignPosition.Attachment1 = attachment1
     end
 end
-
 button(troll, "Black Hole", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     blackHoleActive = not blackHoleActive
     notify(blackHoleActive and "Black Hole ativado." or "Black Hole desativado.")
@@ -433,24 +763,19 @@ button(troll, "Black Hole", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
         local hrp, att1 = setupBlackHolePlayer()
         attachment1Global = att1
         for _, v in next, Workspace:GetDescendants() do ForcePart(v, att1) end
-        Workspace.DescendantAdded:Connect(function(v)
-            if blackHoleActive then ForcePart(v, att1) end
-        end)
+        Workspace.DescendantAdded:Connect(function(v) if blackHoleActive then ForcePart(v, att1) end end)
         spawn(function()
             while blackHoleActive and RunService.RenderStepped:Wait() do
                 angle = angle + math.rad(2)
-                local offsetX = math.cos(angle) * radius
-                local offsetZ = math.sin(angle) * radius
-                if hrp and att1 then
-                    att1.WorldCFrame = hrp.CFrame * CFrame.new(offsetX, 0, offsetZ)
-                end
+                local ox = math.cos(angle) * radius
+                local oz = math.sin(angle) * radius
+                if hrp and att1 then att1.WorldCFrame = hrp.CFrame * CFrame.new(ox, 0, oz) end
             end
         end)
     else
         if attachment1Global then attachment1Global.WorldCFrame = CFrame.new(0, -1000, 0) end
     end
 end)
-
 button(troll, "TP Tool (Clique para Teleportar)", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     tpToolEnabled = not tpToolEnabled
     notify(tpToolEnabled and "TP Tool ativado." or "TP Tool desativado.")
@@ -467,10 +792,9 @@ button(troll, "TP Tool (Clique para Teleportar)", UDim2.new(1, -4, 0, 34), UDim2
     end
 end, true)
 
--- 3. FUN
+-- 4. FUN
 local fun = newPage("Fun")
 pageTitle(fun, "Fun & Diversão")
-
 button(fun, "Dance", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
     if hum then
@@ -481,35 +805,26 @@ button(fun, "Dance", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
         notify("Dançando!")
     end
 end)
-
 button(fun, "Girar Personagem", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if hrp then
-        for i = 1, 36 do
-            hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(10), 0)
-            RunService.Heartbeat:Wait()
-        end
+        for i = 1, 36 do hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(10), 0); RunService.Heartbeat:Wait() end
         notify("Giro concluído!")
     end
 end)
-
 button(fun, "Invisível (Invis GUI)", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
-    pcall(function()
-        loadstring(game:HttpGet('https://pastebin.com/raw/3Rnd9rHf'))()
-    end)
+    pcall(function() loadstring(game:HttpGet('https://pastebin.com/raw/3Rnd9rHf'))() end)
     notify("Invisibilidade executada.")
 end)
 
--- 4. PLAYER
+-- 5. PLAYER
 local playerPage = newPage("Player")
 pageTitle(playerPage, "Configurações de Player")
-
 local noclipActive = false
 button(playerPage, "Alternar Noclip", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
     noclipActive = not noclipActive
     notify(noclipActive and "Noclip ativado." or "Noclip desativado.")
 end)
-
 RunService.Stepped:Connect(function()
     if noclipActive and LocalPlayer.Character then
         for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
@@ -517,7 +832,6 @@ RunService.Stepped:Connect(function()
         end
     end
 end)
-
 local speedInput = textbox(playerPage, "Velocidade (16 - 150)", UDim2.new(1, -4, 0, 36), UDim2.new())
 button(playerPage, "Aplicar Velocidade", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     local n = tonumber(speedInput.Text)
@@ -526,7 +840,6 @@ button(playerPage, "Aplicar Velocidade", UDim2.new(1, -4, 0, 34), UDim2.new(), f
     hum.WalkSpeed = math.clamp(n, 16, 150)
     notify("Velocidade definida: " .. hum.WalkSpeed)
 end)
-
 local jumpInput = textbox(playerPage, "Força do Pulo (50 - 300)", UDim2.new(1, -4, 0, 36), UDim2.new())
 button(playerPage, "Aplicar Pulo", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     local n = tonumber(jumpInput.Text)
@@ -536,13 +849,10 @@ button(playerPage, "Aplicar Pulo", UDim2.new(1, -4, 0, 34), UDim2.new(), functio
     hum.JumpPower = math.clamp(n, 50, 300)
     notify("Pulo definido: " .. hum.JumpPower)
 end)
-
 button(playerPage, "Resetar Personagem", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
     if hum then hum.Health = 0 end
-end, true)
-
--- 5. ESP
+end, true)-- 6. ESP
 local espPage = newPage("Esp")
 pageTitle(espPage, "ESP Geral & MM2")
 local espEnabled = false
@@ -550,7 +860,6 @@ button(espPage, "Alternar ESP de Jogadores", UDim2.new(1, -4, 0, 36), UDim2.new(
     espEnabled = not espEnabled
     notify(espEnabled and "ESP Ativado." or "ESP Desativado.")
 end)
-
 RunService.RenderStepped:Connect(function()
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
@@ -570,7 +879,6 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
-
 button(espPage, "ESP MurderMystery2", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/siriguela820/Siriguela-hub-V1/refs/heads/main/MurderMystery2", true))()
@@ -578,83 +886,66 @@ button(espPage, "ESP MurderMystery2", UDim2.new(1, -4, 0, 34), UDim2.new(), func
     notify("ESP MM2 Carregado.")
 end)
 
--- 6. FE (Com todas as animações e scripts solicitados)
+-- 7. FE
 local fe = newPage("FE")
 pageTitle(fe, "Utilidades FE")
-
 button(fe, "FE Jerk Off", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     pcall(function() loadstring(game:HttpGet("https://pastefy.app/wa3v2Vgm/raw"))() end)
     notify("FE Jerk Off executado.")
 end)
-
 button(fe, "FE Shape Shifter Anim", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     pcall(function() loadstring(game:HttpGet("https://pastefy.app/2C3cRXXp/raw"))() end)
     notify("Shape Shifter executado.")
 end)
-
 button(fe, "FE Seraphic Blade Anim", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     pcall(function() loadstring(game:HttpGet("https://pastefy.app/59mJGQGe/raw"))() end)
     notify("Seraphic Blade executado.")
 end)
-
 button(fe, "FE Psycho Animation", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     pcall(function() loadstring(game:HttpGet("https://pastefy.app/YJITpCRA/raw"))() end)
     notify("Psycho Animation executado.")
 end)
-
 button(fe, "FE Killer Animation", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     pcall(function() loadstring(game:HttpGet("https://pastefy.app/riYch0rX/raw"))() end)
     notify("Killer Animation executado.")
 end)
-
 button(fe, "FE Zombie", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     pcall(function() loadstring(game:HttpGet("https://pastefy.app/JOWniO6o/raw"))() end)
     notify("FE Zombie executado.")
 end)
-
 button(fe, "FE R15 Jerk Off", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     pcall(function() loadstring(game:HttpGet("https://pastefy.app/YZoglOyJ/raw"))() end)
     notify("R15 Jerk Off executado.")
 end)
-
 button(fe, "FE R15 Sonic X Super", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Azizanzz0/FE-R15-Sonic-X-Super/refs/heads/main/Protected%20SonicXSuper.txt"))() end)
     notify("Sonic X Super executado.")
 end)
-
 button(fe, "FE Car v4", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/AstraOutlight/my-scripts/refs/heads/main/fe%20car%20v4"))() end)
     notify("FE Car v4 executado.")
 end)
 
--- 7. SCRIPTS
+-- 8. SCRIPTS
 local scriptsPage = newPage("Scripts")
 pageTitle(scriptsPage, "Scripts Externos")
-
 button(scriptsPage, "Carregar Ghost Hub", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
     notify("Carregando Ghost Hub...")
-    pcall(function()
-        loadstring(game:HttpGet('https://raw.githubusercontent.com/GhostPlayer352/Test4/main/GhostHub', true))()
-    end)
+    pcall(function() loadstring(game:HttpGet('https://raw.githubusercontent.com/GhostPlayer352/Test4/main/GhostHub', true))() end)
 end)
-
 button(scriptsPage, "VFly + Noclip", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
     notify("Carregando VFly...")
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/makkurokurosukescript/VFly-gui/refs/heads/main/VFly%20gui", true))()
-    end)
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/makkurokurosukescript/VFly-gui/refs/heads/main/VFly%20gui", true))() end)
 end)
 
--- 8. PROTEÇÃO (Anti Fling Avançado)
+-- 9. PROTEÇÃO
 local protecao = newPage("Proteção")
 pageTitle(protecao, "Proteções e Segurança")
-
 local antiFlingActive = false
 button(protecao, "Alternar Anti Fling (Anula Ataques)", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
     antiFlingActive = not antiFlingActive
     notify(antiFlingActive and "Anti Fling ATIVADO!" or "Anti Fling DESATIVADO.")
 end)
-
 RunService.Heartbeat:Connect(function()
     if antiFlingActive then
         local char = LocalPlayer.Character
@@ -667,10 +958,9 @@ RunService.Heartbeat:Connect(function()
         end
     end
 end)
-
 infoCard(protecao, "Modo Anti Fling", "Anula física anômala e impulsos excessivos aplicados por terceiros.")
 
--- 9. SETTINGS
+-- 10. SETTINGS
 local settings = newPage("Settings")
 pageTitle(settings, "Configurações")
 button(settings, "Alternar Escala", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
@@ -680,9 +970,12 @@ button(settings, "Centralizar Janela", UDim2.new(1, -4, 0, 36), UDim2.new(), fun
     main.Position = UDim2.new(0.5, -main.AbsoluteSize.X / 2, 0.5, -main.AbsoluteSize.Y / 2)
 end, true)
 
--- Navegação Completa
+-- ============================================================
+-- NAVEGAÇÃO COMPLETA
+-- ============================================================
 for _, entry in ipairs({
     {"Home", "⌂"},
+    {"Comandos", "⌨"},
     {"Troll", "☠"},
     {"Fun", "★"},
     {"Player", "☺"},
@@ -697,7 +990,7 @@ activePage = pages.Home
 activePage.Visible = true
 navButtons.Home.BackgroundColor3 = COLORS.red2
 
--- Arrastar Janela
+-- Arrastar janela
 local dragging, dragStart, startPos
 header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -732,11 +1025,32 @@ UserInputService.InputBegan:Connect(function(input, processed)
     end
 end)
 
--- === INCLUSÃO DO SISTEMA DE COMANDOS DO INFINITE YIELD SOLICITADO ===
+-- ============================================================
+-- CARREGAMENTO DO SIRIGUELA ADMIN (substitui o Infinite Yield)
+-- ============================================================
 task.spawn(function()
     pcall(function()
-        loadstring(readfile and isfile and isfile("Admin_2.txt") and readfile("Admin_2.txt") or game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+        local adminSrc = nil
+        if isfile then
+            for _, path in ipairs({"SiriguelaAdmin.txt", "Siriguela admin k.txt", "Admin.txt", "Admin_2.txt"}) do
+                if isfile(path) then
+                    adminSrc = readfile(path)
+                    break
+                end
+            end
+        end
+        if not adminSrc then
+            pcall(function()
+                adminSrc = game:HttpGet("https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPO/main/SiriguelaAdmin.lua")
+            end)
+        end
+        if adminSrc then
+            loadstring(adminSrc)()
+            print("[Siriguela Hub] Admin carregado com sucesso.")
+        else
+            warn("[Siriguela Hub] Siriguela Admin nao encontrado. Coloque 'SiriguelaAdmin.txt' no executor.")
+        end
     end)
 end)
 
-print("Siriguela Hub Ultimate carregado com sucesso.")
+print("Siriguela Hub Ultimate (FINAL) carregado com sucesso.")
