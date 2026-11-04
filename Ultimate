@@ -1,6 +1,6 @@
 --[[
     SIRIGUELA HUB ULTIMATE - Versão Completa Definitiva (FINAL)
-    PARTE 1/3 - Base, helpers, Home
+    PARTE 1/3 - Base, helpers, Home, Comandos (core)
     COLE AS 3 PARTES EM UM ÚNICO ARQUIVO .LUA
 ]]
 
@@ -132,7 +132,7 @@ sizeConstraint.MaxSize = Vector2.new(820, 560)
 sizeConstraint.Parent = main
 
 local scale = Instance.new("UIScale")
-scale.Scale = 1
+scale.Scale = 0.75  -- começa menor
 scale.Parent = main
 
 local header = make("Frame", {
@@ -236,13 +236,12 @@ local function notify(message)
     end)
 end
 
--- Variáveis Globais
+-- Variáveis globais
 local selectedPlayer = nil
 local viewingPlayer = false
 local oldCameraSubject = nil
 local tpToolEnabled = false
 local tpToolConnection = nil
-
 if not getgenv().SiriguelaCmdHistory then getgenv().SiriguelaCmdHistory = {} end
 
 local function stopViewing()
@@ -255,248 +254,622 @@ end
 -- 1. HOME
 local home = newPage("Home")
 pageTitle(home, "Painel Principal")
-infoCard(home, "Status", "Siriguela Hub Ultimate carregado com sucesso. Use a aba Comandos para o Siriguela Admin.")-- 2. COMANDOS (Aba inteligente com filtro, lista, popup de argumentos)
+infoCard(home, "Status", "Siriguela Hub Ultimate carregado com sucesso. Use a aba Comandos.")
+-- 2. COMANDOS (Réplica fiel do Siriguela Admin)
 local cmdPage = newPage("Comandos")
 pageTitle(cmdPage, "Comandos do Siriguela Admin")
 
-local commandList = {
-    {cmd="kill", desc="Mata o jogador (precisa tool)", arg="player"},
-    {cmd="bring", desc="Traz o jogador até você (precisa tool)", arg="player"},
-    {cmd="spin", desc="Faz você e o jogador girar (precisa tool)", arg="player"},
-    {cmd="unspin", desc="Para o spin", arg="none"},
-    {cmd="attach", desc="Anexa você ao jogador (precisa tool)", arg="player"},
-    {cmd="unattach", desc="Desanexa do jogador", arg="player"},
-    {cmd="follow", desc="Segue o jogador", arg="player"},
-    {cmd="unfollow", desc="Para de seguir", arg="none"},
-    {cmd="freefall", desc="Joga você e o jogador no ar (precisa tool)", arg="player"},
-    {cmd="trail", desc="Fica na frente do jogador", arg="player"},
-    {cmd="untrail", desc="Para o trail", arg="none"},
-    {cmd="orbit", desc="Orbita o jogador", arg="player"},
-    {cmd="unorbit", desc="Para de orbitar", arg="none"},
-    {cmd="fling", desc="Arremessa o jogador (precisa tool)", arg="player"},
-    {cmd="unfling", desc="Para o fling", arg="none"},
-    {cmd="void", desc="Teleporta o jogador para o void (precisa tool)", arg="player"},
-    {cmd="annoy", desc="Loop TP no jogador", arg="player"},
-    {cmd="unannoy", desc="Para o annoy", arg="none"},
-    {cmd="headwalk", desc="Loop TP na cabeça do jogador", arg="player"},
-    {cmd="unheadwalk", desc="Para o headwalk", arg="none"},
-    {cmd="view", desc="Muda a câmera para o jogador", arg="player"},
-    {cmd="unview", desc="Restaura a câmera", arg="none"},
-    {cmd="goto", desc="Teleporta até o jogador", arg="player"},
-    {cmd="rkill", desc="Mata você e o jogador (precisa tool)", arg="player"},
-    {cmd="cbring", desc="Traz o jogador pra frente de você", arg="player"},
-    {cmd="uncbring", desc="Para o cbring", arg="none"},
-    {cmd="swap", desc="Troca de posição com o jogador (precisa tool)", arg="player"},
-    {cmd="givetool", desc="Dá a tool equipada ao jogador", arg="player"},
-    {cmd="givealltools", desc="Dá todas as tools ao jogador", arg="player"},
-    {cmd="glitch", desc="Glitcha você e o jogador", arg="player"},
-    {cmd="unglitch", desc="Desglitcha", arg="none"},
-    {cmd="carpet", desc="Vira tapete do jogador", arg="player"},
-    {cmd="uncarpet", desc="Para o carpet", arg="none"},
-    {cmd="stare", desc="Olha fixamente o jogador", arg="player"},
-    {cmd="unstare", desc="Para de olhar", arg="none"},
-    {cmd="cfreeze", desc="Congela o jogador no seu cliente", arg="player"},
-    {cmd="uncfreeze", desc="Descongela o jogador", arg="player"},
-    {cmd="bang", desc="Animação 18+ no jogador", arg="player"},
-    {cmd="unbang", desc="Para a animação", arg="none"},
-    {cmd="age", desc="Mostra idade da conta no chat", arg="player"},
-    {cmd="id", desc="Mostra ID da conta no chat", arg="player"},
-    {cmd=".age", desc="Mostra idade da conta (privado)", arg="player"},
-    {cmd=".id", desc="Mostra ID da conta (privado)", arg="player"},
-    {cmd="speed", desc="Velocidade de caminhada (default 16)", arg="number"},
-    {cmd="ws", desc="Atalho para speed", arg="number"},
-    {cmd="jumppower", desc="Força do pulo (default 50)", arg="number"},
-    {cmd="jp", desc="Atalho para jumppower", arg="number"},
-    {cmd="hipheight", desc="Altura do flutuar (default 0)", arg="number"},
-    {cmd="hh", desc="Atalho para hipheight", arg="number"},
-    {cmd="default", desc="Reseta speed, jp e hh", arg="none"},
-    {cmd="noclip", desc="Atravessa paredes", arg="none"},
-    {cmd="clip", desc="Desativa noclip", arg="none"},
-    {cmd="fly", desc="Modo voar (WASD)", arg="none"},
-    {cmd="unfly", desc="Desativa voo", arg="none"},
-    {cmd="flyspeed", desc="Velocidade do voo", arg="number"},
-    {cmd="gravity", desc="Muda a gravidade (default 196.2)", arg="number"},
-    {cmd="state", desc="Muda estado do Humanoid", arg="number"},
-    {cmd="unstate", desc="Para de mudar estado", arg="none"},
-    {cmd="god", desc="FE Godmode (usar grespawn p/ sair)", arg="none"},
-    {cmd="grespawn", desc="Respawn FE (remove godmode)", arg="none"},
-    {cmd="respawn", desc="Respawn alternativo", arg="none"},
-    {cmd="reset", desc="Reseta o personagem", arg="none"},
-    {cmd="drophats", desc="Dropar chapéus", arg="none"},
-    {cmd="droptool", desc="Dropar tool equipada", arg="none"},
-    {cmd="loopdhats", desc="Loop dropar chapéus", arg="none"},
-    {cmd="unloopdhats", desc="Para loop dropar chapéus", arg="none"},
-    {cmd="loopdtool", desc="Loop dropar tools", arg="none"},
-    {cmd="unloopdtool", desc="Para loop dropar tools", arg="none"},
-    {cmd="invisible", desc="Fica invisível (reset p/ sair)", arg="none"},
-    {cmd="nolimbs", desc="Remove braços e pernas", arg="none"},
-    {cmd="blockhead", desc="Remove mesh da cabeça", arg="none"},
-    {cmd="rmeshhats", desc="Remove mesh dos chapéus", arg="none"},
-    {cmd="blockhats", desc="Atalho rmeshhats", arg="none"},
-    {cmd="rmeshtool", desc="Remove mesh da tool", arg="none"},
-    {cmd="blocktool", desc="Atalho rmeshtool", arg="none"},
-    {cmd="spinner", desc="Faz girar", arg="none"},
-    {cmd="nospinner", desc="Para de girar", arg="none"},
-    {cmd="pstand", desc="Platform stand on", arg="none"},
-    {cmd="unpstand", desc="Platform stand off", arg="none"},
-    {cmd="sit", desc="Senta", arg="none"},
-    {cmd="stopsit", desc="Impede de sentar", arg="none"},
-    {cmd="gosit", desc="Permite sentar", arg="none"},
-    {cmd="disable", desc="Remove humanoid", arg="none"},
-    {cmd="enable", desc="Restaura humanoid", arg="none"},
-    {cmd="savepos", desc="Salva posição atual", arg="none"},
-    {cmd="loadpos", desc="Teleporta para posição salva", arg="none"},
-    {cmd="fixcam", desc="Conserta a câmera", arg="none"},
-    {cmd="fecheck", desc="Verifica se o jogo é FE", arg="none"},
-    {cmd="version", desc="Mostra versão do Admin", arg="none"},
-    {cmd="gameid", desc="Mostra ID do jogo", arg="none"},
-    {cmd="chat", desc="Envia mensagem no chat", arg="text"},
-    {cmd="spam", desc="Spamma uma mensagem", arg="text"},
-    {cmd="unspam", desc="Para o spam", arg="none"},
-    {cmd="spamwait", desc="Delay do spam (segundos)", arg="number"},
-    {cmd="pmspam", desc="Spamma DM para jogador", arg="player"},
-    {cmd="unpmspam", desc="Para o pmspam", arg="none"},
-    {cmd="logchat", desc="Loga todo chat no console", arg="none"},
-    {cmd="unlogchat", desc="Para de logar chat", arg="none"},
-    {cmd="btools", desc="Gives btools (client)", arg="none"},
-    {cmd="unlockws", desc="Desbloqueia workspace", arg="none"},
-    {cmd="lockws", desc="Bloqueia workspace", arg="none"},
-    {cmd="wsvis", desc="Transparência do workspace (0-1)", arg="number"},
-    {cmd="removeinvis", desc="Remove paredes invisíveis", arg="none"},
-    {cmd="removefog", desc="Remove fog", arg="none"},
-    {cmd="delobj", desc="Deleta objeto por nome", arg="text"},
-    {cmd="bringobj", desc="Traz objeto por nome", arg="text"},
-    {cmd="bringmod", desc="Traz modelo por nome", arg="text"},
-    {cmd="deldecal", desc="Remove todos os decals", arg="none"},
-    {cmd="getplrs", desc="Printa jogadores no console (F9)", arg="none"},
-    {cmd="remotes", desc="Printa remotes no console", arg="none"},
-    {cmd="noremotes", desc="Para de printar remotes", arg="none"},
-    {cmd="tpdefault", desc="Para todos os loop TP", arg="none"},
-    {cmd="clicktp", desc="Clique+E para teleportar", arg="none"},
-    {cmd="noclicktp", desc="Desativa click TP", arg="none"},
-    {cmd="clickdel", desc="Clique+E para deletar", arg="none"},
-    {cmd="noclickdel", desc="Desativa click delete", arg="none"},
-    {cmd="toolson", desc="Auto-coleta tools dropadas", arg="none"},
-    {cmd="toolsoff", desc="Para auto-coleta", arg="none"},
-    {cmd="reach", desc="Aumenta alcance da arma", arg="number"},
-    {cmd="reachd", desc="Reach padrão", arg="none"},
-    {cmd="noreach", desc="Remove reach", arg="none"},
-    {cmd="anim", desc="Aplica animação por ID", arg="text"},
-    {cmd="animgui", desc="Abre GUI Energize", arg="none"},
-    {cmd="explorer", desc="Abre DEX Explorer", arg="none"},
-    {cmd="hypertotal", desc="Abre GUI Hypertotal", arg="none"},
-    {cmd="opfinality", desc="Abre GUI Opfinality", arg="none"},
-    {cmd="shutdown", desc="Tenta derrubar o servidor", arg="none"},
-    {cmd="prefix", desc="Muda o prefixo do Admin", arg="text"},
-    {cmd="cmds", desc="Abre lista de comandos do Admin", arg="none"},
-    {cmd="delcmdbar", desc="Remove a command bar do Admin", arg="none"},
-}
+-- ==== ESTADO DO ADMIN (idêntico ao original) ====
+local lplayer = LocalPlayer
+local Mouse = lplayer:GetMouse()
+local prefix = ";"
+local speedget = 1
+local speedfly = 1
+local spamdelay = 1
+local spin = false
+local followed = false
+local traill = false
+local noclip = false
+local annoying = false
+local hwalk = false
+local droppinghats = false
+local droppingtools = false
+local flying = false
+local spamming = false
+local spammingpm = false
+local remotes = true
+local added = true
+local binds = false
+local stopsitting = false
+local clickgoto = false
+local gettingtools = false
+local removingmeshhats = false
+local removingmeshtool = false
+local clickdel = false
+local staring = false
+local chatlogs = false
+local banpl = false
+local changingstate = false
+local statechosen = 0
+local cbring = false
+local cbringall = false
+local spinplr, flwplr, trlplr, annplr, hdwplr, stareplr, bplrr, brplr, attplr, pmspammed
+local spamtext = ""
+local saved = CFrame.new()
 
-local function execNative(cmdText)
-    local lp = LocalPlayer
-    local char = lp.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    local args = cmdText:split(" ")
-    local cmd = args[1]:lower()
-
-    local function getPlayerByName(name)
-        if not name then return nil end
-        if name:lower() == "all" then return "all" end
-        if name:lower() == "others" then return "others" end
-        if name:lower() == "me" then return lp end
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= lp and p.Name:lower():sub(1, #name) == name:lower() then return p end
+local function GetPlayer(String)
+    local Found = {}
+    local strl = String:lower()
+    if strl == "all" then
+        for _, v in pairs(Players:GetPlayers()) do table.insert(Found, v) end
+    elseif strl == "others" then
+        for _, v in pairs(Players:GetPlayers()) do if v.Name ~= lplayer.Name then table.insert(Found, v) end end
+    elseif strl == "me" then
+        for _, v in pairs(Players:GetPlayers()) do if v.Name == lplayer.Name then table.insert(Found, v) end end
+    else
+        for _, v in pairs(Players:GetPlayers()) do
+            if v.Name:lower():sub(1, #String) == String:lower() then table.insert(Found, v) end
         end
-        return nil
     end
+    return Found
+end
 
-    local ok = false
-    if cmd == "speed" or cmd == "ws" then
-        local n = tonumber(args[2]); if n and hum then hum.WalkSpeed = n; ok = true end
-    elseif cmd == "jumppower" or cmd == "jp" then
-        local n = tonumber(args[2]); if n and hum then hum.UseJumpPower = true; hum.JumpPower = n; ok = true end
-    elseif cmd == "hipheight" or cmd == "hh" then
-        local n = tonumber(args[2]); if n and hum then hum.HipHeight = n; ok = true end
-    elseif cmd == "default" then
-        if hum then hum.WalkSpeed = 16; hum.UseJumpPower = true; hum.JumpPower = 50; hum.HipHeight = 0; ok = true end
-    elseif cmd == "noclip" then
-        getgenv()._noclip = true
-        if not getgenv()._noclipConn then
-            getgenv()._noclipConn = RunService.Stepped:Connect(function()
-                if getgenv()._noclip and lp.Character then
-                    for _, part in ipairs(lp.Character:GetDescendants()) do
-                        if part:IsA("BasePart") then part.CanCollide = false end
-                    end
-                end
-            end)
+-- ==== LOOPS (idênticos ao original) ====
+RunService.Stepped:Connect(function()
+    if spin and spinplr and spinplr.Character and lplayer.Character then
+        lplayer.Character.HumanoidRootPart.CFrame = spinplr.Character.HumanoidRootPart.CFrame
+    end
+    if followed and flwplr and flwplr.Character and lplayer.Character then
+        local t = flwplr.Character.HumanoidRootPart
+        lplayer.Character.HumanoidRootPart.CFrame = t.CFrame + t.CFrame.lookVector * -5
+    end
+    if traill and trlplr and trlplr.Character and lplayer.Character then
+        local t = trlplr.Character.HumanoidRootPart
+        lplayer.Character.HumanoidRootPart.CFrame = t.CFrame + t.CFrame.lookVector * 5
+    end
+    if annoying and annplr and annplr.Character and lplayer.Character then
+        lplayer.Character.HumanoidRootPart.CFrame = annplr.Character.HumanoidRootPart.CFrame
+    end
+    if hwalk and hdwplr and hdwplr.Character and lplayer.Character then
+        lplayer.Character.HumanoidRootPart.CFrame = hdwplr.Character.HumanoidRootPart.CFrame + Vector3.new(0, 4, 0)
+    end
+    if staring and stareplr and stareplr.Character and lplayer.Character and lplayer.Character:FindFirstChild("Torso") and stareplr.Character:FindFirstChild("Torso") then
+        lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(lplayer.Character.Torso.Position, stareplr.Character.Torso.Position)
+    end
+    if banpl and bplrr then
+        local p = Players:FindFirstChild(bplrr)
+        if p and p.Character and lplayer.Character then
+            lplayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame
         end
-        ok = true
-    elseif cmd == "clip" then getgenv()._noclip = false; ok = true
-    elseif cmd == "reset" or cmd == "respawn" or cmd == "grespawn" then
-        if hum then hum.Health = 0; ok = true end
-    elseif cmd == "god" then
-        if hum then hum.Name = "1"; local l = char["1"]:Clone(); l.Parent = char; l.Name = "Humanoid"; task.wait(0.1); char["1"]:Destroy(); ok = true end
-    elseif cmd == "goto" then
-        local t = getPlayerByName(args[2])
-        if type(t) == "Instance" and t.Character and t.Character:FindFirstChild("HumanoidRootPart") and hrp then
-            hrp.CFrame = t.Character.HumanoidRootPart.CFrame; ok = true
-        elseif t == "all" or t == "others" then
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and hrp then
-                    hrp.CFrame = p.Character.HumanoidRootPart.CFrame; ok = true; break
+    end
+end)
+
+RunService.Stepped:Connect(function()
+    if noclip and lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid") then
+        local h = lplayer.Character:FindFirstChildOfClass("Humanoid")
+        if h.RigType == Enum.HumanoidRigType.R6 then
+            for _, part in ipairs(lplayer.Character:GetChildren()) do
+                if part:IsA("BasePart") then part.CanCollide = false end
+            end
+        else
+            h:ChangeState(11)
+        end
+    end
+    if changingstate and lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid") then
+        pcall(function() lplayer.Character.Humanoid:ChangeState(statechosen) end)
+    end
+    if stopsitting and lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid") then
+        lplayer.Character.Humanoid.Sit = false
+    end
+end)
+
+RunService.Stepped:Connect(function()
+    if not lplayer.Character then return end
+    if droppinghats then
+        for _, v in ipairs(lplayer.Character:GetChildren()) do
+            if v:IsA("Accessory") or v:IsA("Hat") then v.Parent = workspace end
+        end
+    end
+    if droppingtools then
+        for _, v in ipairs(lplayer.Character:GetChildren()) do
+            if v:IsA("Tool") then v.Parent = workspace end
+        end
+    end
+    if removingmeshhats then
+        for _, v in ipairs(lplayer.Character:GetChildren()) do
+            if (v:IsA("Accessory") or v:IsA("Hat")) and v:FindFirstChild("Handle") then
+                local m = v.Handle:FindFirstChildOfClass("SpecialMesh")
+                if m then m:Destroy() end
+            end
+        end
+    end
+    if removingmeshtool then
+        for _, v in ipairs(lplayer.Character:GetChildren()) do
+            if v:IsA("Tool") and v:FindFirstChild("Handle") then
+                local m = v.Handle:FindFirstChildOfClass("SpecialMesh")
+                if m then m:Destroy() end
+            end
+        end
+    end
+end)
+
+Mouse.KeyDown:Connect(function(key)
+    if key == "e" then
+        if Mouse.Target then
+            if clickgoto and lplayer.Character then
+                lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(Mouse.Hit.x, Mouse.Hit.y + 5, Mouse.Hit.z)
+            elseif clickdel then
+                Mouse.Target:Destroy()
+            end
+        end
+    end
+end)
+
+Workspace.ChildAdded:Connect(function(part)
+    if gettingtools and part:IsA("Tool") and lplayer.Character then
+        pcall(function() part.Handle.CFrame = lplayer.Character.HumanoidRootPart.CFrame end)
+    end
+end)
+
+task.spawn(function()
+    while true do task.wait(spamdelay)
+        if spamming then
+            local rs = game:GetService("ReplicatedStorage")
+            if rs:FindFirstChild("DefaultChatSystemChatEvents") then
+                rs.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(spamtext, "All")
+            end
+        end
+    end
+end)
+task.spawn(function()
+    while true do task.wait(spamdelay)
+        if spammingpm and pmspammed then
+            local rs = game:GetService("ReplicatedStorage")
+            if rs:FindFirstChild("DefaultChatSystemChatEvents") then
+                rs.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("/w "..pmspammed.." @@@@@@@@@@@@@@", "All")
+            end
+        end
+    end
+end)
+task.spawn(function()
+    while true do task.wait()
+        if cbring and brplr then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Name == brplr and lplayer.Character then
+                    player.Character.HumanoidRootPart.CFrame = lplayer.Character.HumanoidRootPart.CFrame + lplayer.Character.HumanoidRootPart.CFrame.lookVector * 2
                 end
             end
         end
-    elseif cmd == "view" then
-        local t = getPlayerByName(args[2])
-        if type(t) == "Instance" and t.Character then
-            local h = t.Character:FindFirstChildOfClass("Humanoid")
-            if h then workspace.CurrentCamera.CameraSubject = h; ok = true end
+        if cbringall then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and lplayer.Character then
+                    player.Character.HumanoidRootPart.CFrame = lplayer.Character.HumanoidRootPart.CFrame + lplayer.Character.HumanoidRootPart.CFrame.lookVector * 3
+                end
+            end
         end
-    elseif cmd == "unview" or cmd == "fixcam" then
-        if hum then workspace.CurrentCamera.CameraSubject = hum; ok = true end
-    elseif cmd == "drophats" then
-        if char then for _, v in ipairs(char:GetChildren()) do if v:IsA("Accessory") or v:IsA("Hat") then v.Parent = workspace end end; ok = true end
-    elseif cmd == "droptool" then
-        if char then for _, v in ipairs(char:GetChildren()) do if v:IsA("Tool") then v.Parent = workspace end end; ok = true end
-    elseif cmd == "invisible" then
-        if char then for _, v in ipairs(char:GetDescendants()) do if v:IsA("BasePart") then v.Transparency = 1 end if v:IsA("Decal") then v.Transparency = 1 end end; ok = true end
-    elseif cmd == "removefog" then Lighting.FogStart = 0; Lighting.FogEnd = 999999999; ok = true
-    elseif cmd == "getplrs" then for _, p in ipairs(Players:GetPlayers()) do print(p.Name) end; ok = true
-    elseif cmd == "gravity" then local n = tonumber(args[2]); if n then workspace.Gravity = n; ok = true end
-    elseif cmd == "chat" then
-        local msg = cmdText:sub(6)
-        if msg ~= "" then
-            local rs = game:GetService("ReplicatedStorage")
-            if rs:FindFirstChild("DefaultChatSystemChatEvents") then rs.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All") end
-            ok = true
-        end
-    elseif cmd == "cmds" then
-        local g = game:GetService("CoreGui"):FindFirstChild("CMDS")
-        if g and g:FindFirstChild("CMDSFRAME") then g.CMDSFRAME.Visible = true end; ok = true
     end
-    return ok
+end)
+
+-- ==== EXECUTOR DE COMANDOS (mesma lógica do lplayer.Chatted do Admin) ====
+local function RunAdminCommand(msg)
+    if not msg or msg == "" then return false end
+    if msg:sub(1,5) == "kill " then
+        if msg:sub(6) == "me" then
+            if lplayer.Character then lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(100000,0,100000) end
+        else
+            for _, v in pairs(GetPlayer(msg:sub(6))) do
+                if not (lplayer.Character and v.Character) then break end
+                local NOW = lplayer.Character.HumanoidRootPart.CFrame
+                lplayer.Character.Humanoid.Name = "1"
+                local l = lplayer.Character["1"]:Clone()
+                l.Parent = lplayer.Character; l.Name = "Humanoid"
+                task.wait(0.1); lplayer.Character["1"]:Destroy()
+                workspace.CurrentCamera.CameraSubject = lplayer.Character
+                for _, t in pairs(lplayer.Backpack:GetChildren()) do
+                    if t:IsA("Tool") then lplayer.Character.Humanoid:EquipTool(t) end
+                end
+                task.wait(0.1)
+                lplayer.Character.HumanoidRootPart.CFrame = v.Character.HumanoidRootPart.CFrame
+                task.wait(0.2)
+                lplayer.Character.HumanoidRootPart.CFrame = v.Character.HumanoidRootPart.CFrame
+                task.wait(0.5)
+                lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(-100000,10,-100000)
+                task.wait(0.7)
+                lplayer.Character:MoveTo(v.Character.Head.Position)
+                task.wait(0.7)
+                lplayer.Character.HumanoidRootPart.CFrame = NOW
+            end
+        end
+        return true
+    end
+    if msg:sub(1,6) == "bring " then
+        for _, v in pairs(GetPlayer(msg:sub(7))) do
+            if not (lplayer.Character and v.Character) then break end
+            local NOW = lplayer.Character.HumanoidRootPart.CFrame
+            lplayer.Character.Humanoid.Name = "1"
+            local l = lplayer.Character["1"]:Clone()
+            l.Parent = lplayer.Character; l.Name = "Humanoid"
+            task.wait(0.1); lplayer.Character["1"]:Destroy()
+            for _, t in pairs(lplayer.Backpack:GetChildren()) do
+                if t:IsA("Tool") then lplayer.Character.Humanoid:EquipTool(t) end
+            end
+            v.Character.HumanoidRootPart.CFrame = lplayer.Character.HumanoidRootPart.CFrame
+            task.wait(0.2)
+            v.Character.HumanoidRootPart.CFrame = lplayer.Character.HumanoidRootPart.CFrame
+            task.wait(0.5)
+            lplayer.Character.HumanoidRootPart.CFrame = NOW
+            task.wait(0.5)
+            lplayer.Character:MoveTo(v.Character.Head.Position)
+            task.wait(0.3)
+            lplayer.Character.HumanoidRootPart.CFrame = NOW
+        end
+        return true
+    end
+    if msg:sub(1,6) == "fling " then
+        for _, v in pairs(GetPlayer(msg:sub(7))) do
+            if not (lplayer.Character and v.Character) then break end
+            local y = Instance.new("RocketPropulsion")
+            y.Parent = lplayer.Character.HumanoidRootPart
+            y.CartoonFactor = 1; y.MaxThrust = 800000; y.MaxSpeed = 1000; y.ThrustP = 200000
+            y.Name = "Fling"
+            workspace.CurrentCamera.CameraSubject = v.Character.Head
+            y.Target = v.Character.HumanoidRootPart
+            y:Fire()
+            noclip = true
+        end
+        return true
+    end
+    if msg:sub(1,7) == "unfling" then
+        noclip = false
+        if lplayer.Character then
+            local f = lplayer.Character.HumanoidRootPart:FindFirstChild("Fling")
+            if f then f:Destroy() end
+            workspace.CurrentCamera.CameraSubject = lplayer.Character:FindFirstChildOfClass("Humanoid")
+        end
+        return true
+    end
+    if msg:sub(1,5) == "void " then
+        for _, v in pairs(GetPlayer(msg:sub(6))) do
+            if not (lplayer.Character and v.Character) then break end
+            lplayer.Character.HumanoidRootPart.CFrame = v.Character.HumanoidRootPart.CFrame
+            task.wait(0.2)
+            lplayer.Character.HumanoidRootPart.CFrame = v.Character.HumanoidRootPart.CFrame
+            task.wait(0.6)
+            lplayer.Character.HumanoidRootPart.CFrame = CFrame.new(9e14,0,9e14)
+        end
+        return true
+    end
+    if msg:sub(1,7) == "follow " then for _, v in pairs(GetPlayer(msg:sub(8))) do followed = true; flwplr = v end return true end
+    if msg:sub(1,8) == "unfollow" then followed = false return true end
+    if msg:sub(1,6) == "trail " then for _, v in pairs(GetPlayer(msg:sub(7))) do traill = true; trlplr = v end return true end
+    if msg:sub(1,7) == "untrail" then traill = false return true end
+    if msg:sub(1,6) == "annoy " then for _, v in pairs(GetPlayer(msg:sub(7))) do annoying = true; annplr = v end return true end
+    if msg:sub(1,7) == "unannoy" then annoying = false return true end
+    if msg:sub(1,9) == "headwalk " then for _, v in pairs(GetPlayer(msg:sub(10))) do hwalk = true; hdwplr = v end return true end
+    if msg:sub(1,10) == "unheadwalk" then hwalk = false return true end
+    if msg:sub(1,6) == "orbit " then
+        for _, v in pairs(GetPlayer(msg:sub(7))) do
+            if lplayer.Character and v.Character then
+                local o = Instance.new("RocketPropulsion")
+                o.Parent = lplayer.Character.HumanoidRootPart
+                o.Name = "Orbit"
+                o.Target = v.Character.HumanoidRootPart
+                o:Fire()
+                noclip = true
+            end
+        end
+        return true
+    end
+    if msg:sub(1,7) == "unorbit" then
+        if lplayer.Character then
+            local o = lplayer.Character.HumanoidRootPart:FindFirstChild("Orbit")
+            if o then o:Destroy() end
+        end
+        noclip = false
+        return true
+    end
+    if msg:sub(1,6) == "noclip" then noclip = true return true end
+    if msg:sub(1,4) == "clip" then noclip = false return true end
+    if msg:sub(1,6) == "speed " then
+        if lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid") then
+            lplayer.Character.Humanoid.WalkSpeed = tonumber(msg:sub(7)) or 16
+        end
+        return true
+    end
+    if msg:sub(1,3) == "ws " then
+        if lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid") then
+            lplayer.Character.Humanoid.WalkSpeed = tonumber(msg:sub(4)) or 16
+        end
+        return true
+    end
+    if msg:sub(1,10) == "hipheight " then
+        if lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid") then
+            lplayer.Character.Humanoid.HipHeight = tonumber(msg:sub(11)) or 0
+        end
+        return true
+    end
+    if msg:sub(1,3) == "hh " then
+        if lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid") then
+            lplayer.Character.Humanoid.HipHeight = tonumber(msg:sub(4)) or 0
+        end
+        return true
+    end
+    if msg:sub(1,10) == "jumppower " then
+        if lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid") then
+            local h = lplayer.Character.Humanoid; h.UseJumpPower = true; h.JumpPower = tonumber(msg:sub(11)) or 50
+        end
+        return true
+    end
+    if msg:sub(1,3) == "jp " then
+        if lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid") then
+            local h = lplayer.Character.Humanoid; h.UseJumpPower = true; h.JumpPower = tonumber(msg:sub(4)) or 50
+        end
+        return true
+    end
+    if msg:sub(1,7) == "default" then
+        if lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid") then
+            local h = lplayer.Character.Humanoid
+            h.WalkSpeed = 16; h.UseJumpPower = true; h.JumpPower = 50; h.HipHeight = 0
+        end
+        return true
+    end
+    if msg:sub(1,3) == "god" then
+        if lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid") then
+            lplayer.Character.Humanoid.Name = "1"
+            local l = lplayer.Character["1"]:Clone()
+            l.Parent = lplayer.Character; l.Name = "Humanoid"
+            task.wait(0.1); lplayer.Character["1"]:Destroy()
+            workspace.CurrentCamera.CameraSubject = lplayer.Character
+        end
+        return true
+    end
+    if msg:sub(1,8) == "grespawn" or msg:sub(1,7) == "respawn" or msg:sub(1,5) == "reset" then
+        if lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid") then
+            lplayer.Character.Humanoid.Health = 0
+        end
+        return true
+    end
+    if msg:sub(1,8) == "drophats" then
+        if lplayer.Character then for _, v in ipairs(lplayer.Character:GetChildren()) do
+            if v:IsA("Accessory") or v:IsA("Hat") then v.Parent = workspace end
+        end end
+        return true
+    end
+    if msg:sub(1,8) == "droptool" then
+        if lplayer.Character then for _, v in ipairs(lplayer.Character:GetChildren()) do
+            if v:IsA("Tool") then v.Parent = workspace end
+        end end
+        return true
+    end
+    if msg:sub(1,9) == "loopdhats" then droppinghats = true return true end
+    if msg:sub(1,11) == "unloopdhats" then droppinghats = false return true end
+    if msg:sub(1,9) == "loopdtool" then droppingtools = true return true end
+    if msg:sub(1,11) == "unloopdtool" then droppingtools = false return true end
+    if msg:sub(1,9) == "invisible" then
+        if lplayer.Character then
+            for _, v in ipairs(lplayer.Character:GetDescendants()) do
+                if v:IsA("BasePart") then v.Transparency = 1 end
+                if v:IsA("Decal") then v.Transparency = 1 end
+            end
+        end
+        return true
+    end
+    if msg:sub(1,5) == "view " then
+        for _, v in pairs(GetPlayer(msg:sub(6))) do
+            if v.Character then
+                local h = v.Character:FindFirstChildOfClass("Humanoid") or v.Character:FindFirstChild("Head")
+                if h then workspace.CurrentCamera.CameraSubject = h end
+            end
+        end
+        return true
+    end
+    if msg:sub(1,6) == "unview" or msg:sub(1,6) == "fixcam" then
+        if lplayer.Character then
+            local h = lplayer.Character:FindFirstChildOfClass("Humanoid")
+            if h then workspace.CurrentCamera.CameraSubject = h end
+        end
+        return true
+    end
+    if msg:sub(1,5) == "goto " then
+        for _, v in pairs(GetPlayer(msg:sub(6))) do
+            if v.Character and v.Character:FindFirstChild("HumanoidRootPart") and lplayer.Character then
+                lplayer.Character.HumanoidRootPart.CFrame = v.Character.HumanoidRootPart.CFrame
+            end
+        end
+        return true
+    end
+    if msg:sub(1,5) == "chat " then
+        local rs = game:GetService("ReplicatedStorage")
+        if rs:FindFirstChild("DefaultChatSystemChatEvents") then
+            rs.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg:sub(6), "All")
+        end
+        return true
+    end
+    if msg:sub(1,5) == "spam " then spamtext = msg:sub(6); spamming = true return true end
+    if msg:sub(1,6) == "unspam" then spamming = false return true end
+    if msg:sub(1,9) == "spamwait " then spamdelay = tonumber(msg:sub(10)) or 1 return true end
+    if msg:sub(1,7) == "pmspam " then
+        for _, v in pairs(GetPlayer(msg:sub(8))) do pmspammed = v.Name; spammingpm = true end
+        return true
+    end
+    if msg:sub(1,8) == "unpmspam" then spammingpm = false return true end
+    if msg:sub(1,8) == "cfreeze " then
+        for _, v in pairs(GetPlayer(msg:sub(9))) do
+            if v.Character then for _, part in pairs(v.Character:GetChildren()) do
+                if part:IsA("BasePart") then part.Anchored = true end
+            end end
+        end
+        return true
+    end
+    if msg:sub(1,10) == "uncfreeze " then
+        for _, v in pairs(GetPlayer(msg:sub(11))) do
+            if v.Character then for _, part in pairs(v.Character:GetChildren()) do
+                if part:IsA("BasePart") then part.Anchored = false end
+            end end
+        end
+        return true
+    end
+    if msg:sub(1,8) == "unlockws" then
+        for _, a in pairs(Workspace:GetChildren()) do if a:IsA("BasePart") then a.Locked = false end end
+        return true
+    end
+    if msg:sub(1,6) == "lockws" then
+        for _, a in pairs(Workspace:GetChildren()) do if a:IsA("BasePart") then a.Locked = true end end
+        return true
+    end
+    if msg:sub(1,6) == "btools" then
+        local c = Instance.new("HopperBin", lplayer.Backpack); c.BinType = Enum.BinType.Clone
+        local d = Instance.new("HopperBin", lplayer.Backpack); d.BinType = Enum.BinType.Hammer
+        local g = Instance.new("HopperBin", lplayer.Backpack); g.BinType = Enum.BinType.Grab
+        return true
+    end
+    if msg:sub(1,6) == "pstand" then
+        if lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid") then lplayer.Character.Humanoid.PlatformStand = true end
+        return true
+    end
+    if msg:sub(1,8) == "unpstand" then
+        if lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid") then lplayer.Character.Humanoid.PlatformStand = false end
+        return true
+    end
+    if msg:sub(1,3) == "sit" then
+        if lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid") then lplayer.Character.Humanoid.Sit = true end
+        return true
+    end
+    if msg:sub(1,9) == "rmeshhats" or msg:sub(1,9) == "blockhats" then
+        if lplayer.Character then for _, v in ipairs(lplayer.Character:GetChildren()) do
+            if (v:IsA("Accessory") or v:IsA("Hat")) and v:FindFirstChild("Handle") then
+                local m = v.Handle:FindFirstChildOfClass("SpecialMesh"); if m then m:Destroy() end
+            end
+        end end
+        return true
+    end
+    if msg:sub(1,9) == "rmeshtool" or msg:sub(1,9) == "blocktool" then
+        if lplayer.Character then for _, v in ipairs(lplayer.Character:GetChildren()) do
+            if v:IsA("Tool") and v:FindFirstChild("Handle") then
+                local m = v.Handle:FindFirstChildOfClass("SpecialMesh"); if m then m:Destroy() end
+            end
+        end end
+        return true
+    end
+    if msg:sub(1,7) == "spinner" then
+        if lplayer.Character and lplayer.Character:FindFirstChild("Left Arm") then
+            local p = Instance.new("RocketPropulsion")
+            p.Parent = lplayer.Character.HumanoidRootPart
+            p.Name = "Spinner"
+            p.Target = lplayer.Character["Left Arm"]
+            p:Fire()
+        end
+        return true
+    end
+    if msg:sub(1,9) == "nospinner" then
+        if lplayer.Character then
+            local s = lplayer.Character.HumanoidRootPart:FindFirstChild("Spinner")
+            if s then s:Destroy() end
+        end
+        return true
+    end
+    if msg:sub(1,6) == "reachd" then
+        if lplayer.Character then for _, v in pairs(lplayer.Character:GetChildren()) do
+            if v:IsA("Tool") and v:FindFirstChild("Handle") then
+                v.Handle.Size = Vector3.new(0.5,0.5,60)
+                v.GripPos = Vector3.new(0,0,0)
+            end
+        end end
+        return true
+    end
+    if msg:sub(1,6) == "reach " then
+        if lplayer.Character then for _, v in pairs(lplayer.Character:GetChildren()) do
+            if v:IsA("Tool") and v:FindFirstChild("Handle") then
+                v.Handle.Size = Vector3.new(0.5,0.5, tonumber(msg:sub(7)) or 60)
+                v.GripPos = Vector3.new(0,0,0)
+            end
+        end end
+        return true
+    end
+    if msg:sub(1,8) == "gravity " then Workspace.Gravity = tonumber(msg:sub(9)) or 196.2 return true end
+    if msg:sub(1,5) == "anim " and lplayer.Character then
+        local h = lplayer.Character:FindFirstChildOfClass("Humanoid")
+        if h then
+            local a = Instance.new("Animation")
+            a.AnimationId = "rbxassetid://"..msg:sub(6)
+            local t = h:LoadAnimation(a); t:Play(0.1,1,1)
+        end
+        return true
+    end
+    if msg:sub(1,7) == "savepos" then
+        if lplayer.Character then saved = lplayer.Character.HumanoidRootPart.CFrame end
+        return true
+    end
+    if msg:sub(1,7) == "loadpos" then
+        if lplayer.Character and saved then lplayer.Character.HumanoidRootPart.CFrame = saved end
+        return true
+    end
+    if msg:sub(1,7) == "clicktp" then clickgoto = true return true end
+    if msg:sub(1,9) == "noclicktp" then clickgoto = false return true end
+    if msg:sub(1,8) == "clickdel" then clickdel = true return true end
+    if msg:sub(1,10) == "noclickdel" then clickdel = false return true end
+    if msg:sub(1,7) == "toolson" then gettingtools = true return true end
+    if msg:sub(1,8) == "toolsoff" then gettingtools = false return true end
+    if msg:sub(1,9) == "tpdefault" then
+        spin=false; followed=false; traill=false; noclip=false; annoying=false; hwalk=false; cbring=false; cbringall=false
+        return true
+    end
+    if msg:sub(1,7) == "stopsit" then stopsitting = true return true end
+    if msg:sub(1,5) == "gosit" then stopsitting = false return true end
+    if msg:sub(1,11) == "removeinvis" then
+        for _, v in pairs(Workspace:GetDescendants()) do
+            if v:IsA("BasePart") and v.Transparency == 1 and v.Name ~= "HumanoidRootPart" then v:Destroy() end
+        end
+        return true
+    end
+    if msg:sub(1,9) == "removefog" then Lighting.FogStart = 0; Lighting.FogEnd = 9e9 return true end
+    if msg:sub(1,8) == "deldecal" then
+        for _, v in pairs(Workspace:GetDescendants()) do if v:IsA("Decal") then v:Destroy() end end
+        return true
+    end
+    if msg:sub(1,7) == "delobj " then
+        local n = msg:sub(8)
+        for _, v in pairs(Workspace:GetDescendants()) do if v.Name == n then v:Destroy() end end
+        return true
+    end
+    if msg:sub(1,9) == "givetool " then
+        if lplayer.Character then for _, v in pairs(lplayer.Character:GetDescendants()) do
+            if v:IsA("Tool") then
+                for _, p in pairs(GetPlayer(msg:sub(10))) do
+                    if p.Character then v.Parent = p.Character end
+                end
+            end
+        end end
+        return true
+    end
+    if msg:sub(1,7) == "getplrs" then
+        for _, p in pairs(Players:GetPlayers()) do print(p.Name) end
+        return true
+    end
+    if msg:sub(1,7) == "version" then notify("Siriguela Admin by Siriguela Brasil") return true end
+    if msg:sub(1,6) == "gameid" then notify("GameID: "..game.GameId) return true end
+    if msg:sub(1,4) == "cmds" then notify("Lista de comandos na aba!") return true end
+    return false
 end
 
-local function executeCommand(cmdText)
-    if not cmdText or cmdText == "" then notify("Digite um comando primeiro.") return end
-    cmdText = cmdText:gsub("^;%s*", "")
-    table.insert(getgenv().SiriguelaCmdHistory, 1, cmdText)
-    if #getgenv().SiriguelaCmdHistory > 30 then table.remove(getgenv().SiriguelaCmdHistory) end
-    local ok = execNative(cmdText)
-    if not ok then
-        pcall(function() if _G.SiriguelaAdminRun then _G.SiriguelaAdminRun(cmdText) end end)
-        notify("Enviado: ;" .. cmdText)
-    else
-        notify("Executado: " .. cmdText)
-    end
-    if _G.SiriguelaRefreshHistory then _G.SiriguelaRefreshHistory() end
-end
-
+-- ==== INTERFACE DA ABA COMANDOS ====
 local cmdInput = textbox(cmdPage, "Digite um comando... (ex: speed 100)", UDim2.new(1, -4, 0, 38), UDim2.new())
-button(cmdPage, "▶ Executar Comando", UDim2.new(1, -4, 0, 34), UDim2.new(), function() executeCommand(cmdInput.Text) cmdInput.Text = "" end)
-button(cmdPage, "Limpar Campo", UDim2.new(1, -4, 0, 30), UDim2.new(), function() cmdInput.Text = "" end, true)
+
+button(cmdPage, "▶ Executar Comando", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    local txt = cmdInput.Text
+    if not txt or txt == "" then notify("Digite um comando primeiro.") return end
+    txt = txt:gsub("^;%s*", "")
+    table.insert(getgenv().SiriguelaCmdHistory, 1, txt)
+    if #getgenv().SiriguelaCmdHistory > 30 then table.remove(getgenv().SiriguelaCmdHistory) end
+    local ok = RunAdminCommand(txt)
+    notify(ok and ("Executado: "..txt) or ("Comando não reconhecido: "..txt))
+    cmdInput.Text = ""
+    if _G.SiriguelaRefreshHistory then _G.SiriguelaRefreshHistory() end
+end)
+
+button(cmdPage, "Limpar Campo", UDim2.new(1, -4, 0, 30), UDim2.new(), function()
+    cmdInput.Text = ""
+end, true)
 
 local historyCard = infoCard(cmdPage, "Histórico (últimos 5)", "Nenhum comando executado ainda.")
 function _G.SiriguelaRefreshHistory()
@@ -512,6 +885,82 @@ function _G.SiriguelaRefreshHistory()
 end
 
 pageTitle(cmdPage, "Lista de Comandos (digite para filtrar)")
+
+local commandList = {
+    {cmd="kill", desc="Mata o jogador (precisa tool)", arg="player"},
+    {cmd="bring", desc="Traz o jogador até você (precisa tool)", arg="player"},
+    {cmd="fling", desc="Arremessa o jogador (precisa tool)", arg="player"},
+    {cmd="void", desc="Teleporta o jogador para o void", arg="player"},
+    {cmd="follow", desc="Segue o jogador", arg="player"},
+    {cmd="unfollow", desc="Para de seguir", arg="none"},
+    {cmd="trail", desc="Fica na frente do jogador", arg="player"},
+    {cmd="untrail", desc="Para o trail", arg="none"},
+    {cmd="orbit", desc="Orbita o jogador", arg="player"},
+    {cmd="unorbit", desc="Para de orbitar", arg="none"},
+    {cmd="annoy", desc="Loop TP no jogador", arg="player"},
+    {cmd="unannoy", desc="Para o annoy", arg="none"},
+    {cmd="headwalk", desc="Loop TP na cabeça", arg="player"},
+    {cmd="unheadwalk", desc="Para o headwalk", arg="none"},
+    {cmd="view", desc="Muda a câmera", arg="player"},
+    {cmd="unview", desc="Restaura a câmera", arg="none"},
+    {cmd="goto", desc="Teleporta até o jogador", arg="player"},
+    {cmd="cfreeze", desc="Congela o jogador", arg="player"},
+    {cmd="uncfreeze", desc="Descongela o jogador", arg="player"},
+    {cmd="speed", desc="Velocidade (default 16)", arg="number"},
+    {cmd="ws", desc="Atalho para speed", arg="number"},
+    {cmd="jumppower", desc="Força do pulo", arg="number"},
+    {cmd="jp", desc="Atalho para jumppower", arg="number"},
+    {cmd="hipheight", desc="Altura do flutuar", arg="number"},
+    {cmd="hh", desc="Atalho para hipheight", arg="number"},
+    {cmd="default", desc="Reseta speed/jp/hh", arg="none"},
+    {cmd="noclip", desc="Atravessa paredes", arg="none"},
+    {cmd="clip", desc="Desativa noclip", arg="none"},
+    {cmd="gravity", desc="Muda a gravidade", arg="number"},
+    {cmd="god", desc="FE Godmode", arg="none"},
+    {cmd="grespawn", desc="Respawn FE", arg="none"},
+    {cmd="respawn", desc="Respawn", arg="none"},
+    {cmd="reset", desc="Reset", arg="none"},
+    {cmd="drophats", desc="Dropar chapéus", arg="none"},
+    {cmd="droptool", desc="Dropar tool", arg="none"},
+    {cmd="invisible", desc="Fica invisível", arg="none"},
+    {cmd="chat", desc="Envia mensagem", arg="text"},
+    {cmd="spam", desc="Spamma mensagem", arg="text"},
+    {cmd="unspam", desc="Para spam", arg="none"},
+    {cmd="spamwait", desc="Delay do spam", arg="number"},
+    {cmd="pmspam", desc="Spam DM", arg="player"},
+    {cmd="unpmspam", desc="Para PMSpam", arg="none"},
+    {cmd="btools", desc="Gives btools", arg="none"},
+    {cmd="pstand", desc="Platform stand on", arg="none"},
+    {cmd="unpstand", desc="Platform stand off", arg="none"},
+    {cmd="sit", desc="Senta", arg="none"},
+    {cmd="rmeshhats", desc="Remove mesh dos chapéus", arg="none"},
+    {cmd="rmeshtool", desc="Remove mesh da tool", arg="none"},
+    {cmd="spinner", desc="Faz girar", arg="none"},
+    {cmd="nospinner", desc="Para de girar", arg="none"},
+    {cmd="reach", desc="Aumenta alcance", arg="number"},
+    {cmd="reachd", desc="Reach padrão", arg="none"},
+    {cmd="anim", desc="Aplica animação por ID", arg="text"},
+    {cmd="savepos", desc="Salva posição", arg="none"},
+    {cmd="loadpos", desc="Carrega posição", arg="none"},
+    {cmd="clicktp", desc="Clique+E teleporta", arg="none"},
+    {cmd="noclicktp", desc="Desativa click TP", arg="none"},
+    {cmd="clickdel", desc="Clique+E deleta", arg="none"},
+    {cmd="noclickdel", desc="Desativa click del", arg="none"},
+    {cmd="toolson", desc="Auto-coleta tools", arg="none"},
+    {cmd="toolsoff", desc="Para auto-coleta", arg="none"},
+    {cmd="tpdefault", desc="Para todos loop TP", arg="none"},
+    {cmd="stopsit", desc="Impede de sentar", arg="none"},
+    {cmd="gosit", desc="Permite sentar", arg="none"},
+    {cmd="removeinvis", desc="Remove paredes invisíveis", arg="none"},
+    {cmd="removefog", desc="Remove fog", arg="none"},
+    {cmd="deldecal", desc="Remove decals", arg="none"},
+    {cmd="delobj", desc="Deleta objeto", arg="text"},
+    {cmd="givetool", desc="Dá tool ao jogador", arg="player"},
+    {cmd="getplrs", desc="Printa jogadores", arg="none"},
+    {cmd="version", desc="Mostra versão", arg="none"},
+    {cmd="gameid", desc="Mostra ID do jogo", arg="none"},
+}
+
 local cmdListFrame = make("Frame", { Size = UDim2.new(1, -4, 0, 380), BackgroundColor3 = COLORS.panel, BorderSizePixel = 0 }, cmdPage)
 corner(cmdListFrame, 8)
 local cmdScroll = make("ScrollingFrame", {
@@ -522,55 +971,43 @@ local cmdScroll = make("ScrollingFrame", {
 make("UIListLayout", {Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, cmdScroll)
 
 local function runCommandEntry(entry)
-    if entry.arg == "none" then executeCommand(entry.cmd) return end
+    if entry.arg == "none" then
+        RunAdminCommand(entry.cmd)
+        notify("Executado: "..entry.cmd)
+        return
+    end
     local screen = Instance.new("ScreenGui", PlayerGui)
     screen.Name = "SiriguelaArgPrompt"
     screen.ResetOnSpawn = false
-
     local bg = Instance.new("TextButton")
-    bg.Size = UDim2.new(1, 0, 1, 0)
-    bg.BackgroundColor3 = Color3.new(0, 0, 0)
-    bg.BackgroundTransparency = 0.5
-    bg.BorderSizePixel = 0
-    bg.Text = ""
+    bg.Size = UDim2.new(1, 0, 1, 0); bg.BackgroundColor3 = Color3.new(0,0,0)
+    bg.BackgroundTransparency = 0.5; bg.BorderSizePixel = 0; bg.Text = ""
     bg.Parent = screen
-
     local box = Instance.new("Frame")
-    box.Size = UDim2.new(0, 320, 0, 160)
-    box.Position = UDim2.new(0.5, -160, 0.5, -80)
-    box.BackgroundColor3 = COLORS.bg
-    box.BorderSizePixel = 0
-    corner(box, 10)
-    stroke(box, COLORS.red, 1.5)
-    box.Parent = screen
-
-    local tl = label(box, "Comando: " .. entry.cmd, UDim2.new(1, -20, 0, 28), UDim2.new(0, 10, 0, 8), 15)
+    box.Size = UDim2.new(0, 320, 0, 160); box.Position = UDim2.new(0.5, -160, 0.5, -80)
+    box.BackgroundColor3 = COLORS.bg; box.BorderSizePixel = 0
+    corner(box, 10); stroke(box, COLORS.red, 1.5); box.Parent = screen
+    local tl = label(box, "Comando: "..entry.cmd, UDim2.new(1, -20, 0, 28), UDim2.new(0, 10, 0, 8), 15)
     tl.Font = Enum.Font.GothamBold
-
-    local hint = ""
-    if entry.arg == "player" then hint = "Nome do jogador (ou 'all'/'others'/'me')"
-    elseif entry.arg == "number" then hint = "Digite um número"
-    elseif entry.arg == "text" then hint = "Digite o texto" end
+    local hint = entry.arg == "player" and "Nome do jogador (all/others/me)" or (entry.arg == "number" and "Digite um número" or "Digite o texto")
     label(box, hint, UDim2.new(1, -20, 0, 18), UDim2.new(0, 10, 0, 36), 11, COLORS.muted)
-
     local argInput = textbox(box, "...", UDim2.new(1, -20, 0, 34), UDim2.new(0, 10, 0, 58))
     argInput:CaptureFocus()
-
     button(box, "Executar", UDim2.new(0.45, -5, 0, 30), UDim2.new(0, 10, 1, -40), function()
         local val = argInput.Text
         if val == "" then notify("Digite um valor.") return end
         screen:Destroy()
-        executeCommand(entry.cmd .. " " .. val)
+        local full = entry.cmd.." "..val
+        RunAdminCommand(full)
+        notify("Executado: "..full)
+        table.insert(getgenv().SiriguelaCmdHistory, 1, full)
     end)
-    button(box, "Cancelar", UDim2.new(0.45, -5, 0, 30), UDim2.new(0.55, 5, 1, -40), function()
-        screen:Destroy()
-    end, true)
-
+    button(box, "Cancelar", UDim2.new(0.45, -5, 0, 30), UDim2.new(0.55, 5, 1, -40), function() screen:Destroy() end, true)
     argInput.FocusLost:Connect(function(enter)
         if enter and argInput.Text ~= "" then
-            local val = argInput.Text
-            screen:Destroy()
-            executeCommand(entry.cmd .. " " .. val)
+            local val = argInput.Text; screen:Destroy()
+            RunAdminCommand(entry.cmd.." "..val)
+            notify("Executado: "..entry.cmd.." "..val)
         end
     end)
     bg.Activated:Connect(function() screen:Destroy() end)
@@ -583,32 +1020,33 @@ local function refreshCmdList(filter)
     filter = (filter or ""):lower()
     local shown = 0
     for _, entry in ipairs(commandList) do
-        local matches = filter == "" or entry.cmd:lower():find(filter, 1, true) or entry.desc:lower():find(filter, 1, true)
-        if matches then
+        if filter == "" or entry.cmd:lower():find(filter, 1, true) or entry.desc:lower():find(filter, 1, true) then
             shown = shown + 1
             local btn = make("TextButton", {
-                Size = UDim2.new(1, -2, 0, 44),
-                BackgroundColor3 = COLORS.panel2, Text = "", BorderSizePixel = 0, AutoButtonColor = true,
+                Size = UDim2.new(1, -2, 0, 44), BackgroundColor3 = COLORS.panel2,
+                Text = "", BorderSizePixel = 0, AutoButtonColor = true,
             }, cmdScroll)
             corner(btn, 6)
-            local nameLbl = label(btn, entry.cmd, UDim2.new(1, -10, 0, 18), UDim2.new(0, 8, 0, 4), 13)
-            nameLbl.Font = Enum.Font.GothamBold
-            nameLbl.TextColor3 = COLORS.red
+            local nLbl = label(btn, entry.cmd, UDim2.new(1, -10, 0, 18), UDim2.new(0, 8, 0, 4), 13)
+            nLbl.Font = Enum.Font.GothamBold; nLbl.TextColor3 = COLORS.red
             label(btn, entry.desc, UDim2.new(1, -10, 0, 18), UDim2.new(0, 8, 0, 22), 10, COLORS.muted)
             btn.Activated:Connect(function() runCommandEntry(entry) end)
         end
     end
     if shown == 0 then
-        local empty = label(cmdScroll, "Nenhum comando encontrado para: '" .. filter .. "'", UDim2.new(1, -4, 0, 40), UDim2.new(0, 4, 0, 4), 12, COLORS.muted)
-        empty.TextXAlignment = Enum.TextXAlignment.Center
+        local e = label(cmdScroll, "Nenhum comando: '"..filter.."'", UDim2.new(1, -4, 0, 40), UDim2.new(0, 4, 0, 4), 12, COLORS.muted)
+        e.TextXAlignment = Enum.TextXAlignment.Center
     end
 end
 
 cmdInput:GetPropertyChangedSignal("Text"):Connect(function() refreshCmdList(cmdInput.Text) end)
 cmdInput.FocusLost:Connect(function(enter)
     if enter and cmdInput.Text ~= "" then
-        executeCommand(cmdInput.Text)
+        local txt = cmdInput.Text:gsub("^;%s*", "")
+        RunAdminCommand(txt)
+        notify("Executado: "..txt)
         cmdInput.Text = ""
+        refreshCmdList("")
     end
 end)
 refreshCmdList("")
@@ -619,10 +1057,9 @@ local troll = newPage("Troll")
 pageTitle(troll, "Troll & Kill")
 local playerSearch = textbox(troll, "Buscar jogador...", UDim2.new(1, -4, 0, 36), UDim2.new())
 local selectedLabel = infoCard(troll, "Selecionado", "Nenhum jogador selecionado.")
-
 button(troll, "Atualizar Lista", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     refreshPlayers()
-    notify("Lista de jogadores atualizada.")
+    notify("Lista atualizada.")
 end, true)
 
 local playerList = make("Frame", { Size = UDim2.new(1, -4, 0, 150), BackgroundColor3 = COLORS.panel, BorderSizePixel = 0 }, troll)
@@ -638,14 +1075,14 @@ function refreshPlayers()
     for _, child in ipairs(playerScroll:GetChildren()) do
         if child:IsA("TextButton") then child:Destroy() end
     end
-    local query = string.lower(playerSearch.Text or "")
+    local q = string.lower(playerSearch.Text or "")
     for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and (query == "" or string.find(string.lower(plr.Name), query, 1, true) or string.find(string.lower(plr.DisplayName), query, 1, true)) then
-            local b = button(playerScroll, plr.DisplayName .. " (@" .. plr.Name .. ")", UDim2.new(1, -2, 0, 31), UDim2.new(), function()
+        if plr ~= LocalPlayer and (q == "" or string.find(string.lower(plr.Name), q, 1, true) or string.find(string.lower(plr.DisplayName), q, 1, true)) then
+            local b = button(playerScroll, plr.DisplayName.." (@"..plr.Name..")", UDim2.new(1, -2, 0, 31), UDim2.new(), function()
                 selectedPlayer = plr
                 local t = selectedLabel:FindFirstChildWhichIsA("TextLabel")
-                if t then t.Text = "Alvo: " .. plr.Name end
-                notify("Selecionado: " .. plr.Name)
+                if t then t.Text = "Alvo: "..plr.Name end
+                notify("Selecionado: "..plr.Name)
             end, true)
             b.TextXAlignment = Enum.TextXAlignment.Left
         end
@@ -660,7 +1097,7 @@ end)
 refreshPlayers()
 
 button(troll, "View (Visualizar Câmera)", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
-    if not selectedPlayer or not selectedPlayer.Character then notify("Selecione um jogador válido.") return end
+    if not selectedPlayer or not selectedPlayer.Character then notify("Selecione um jogador.") return end
     local th = selectedPlayer.Character:FindFirstChildOfClass("Humanoid")
     local cam = workspace.CurrentCamera
     if not th or not cam then return end
@@ -668,22 +1105,24 @@ button(troll, "View (Visualizar Câmera)", UDim2.new(1, -4, 0, 34), UDim2.new(),
     oldCameraSubject = cam.CameraSubject
     cam.CameraSubject = th
     viewingPlayer = true
-    notify("Visualizando " .. selectedPlayer.Name)
+    notify("Visualizando "..selectedPlayer.Name)
 end)
-button(troll, "Restaurar Câmera", UDim2.new(1, -4, 0, 34), UDim2.new(), function() stopViewing(); notify("Câmera restaurada.") end, true)
+button(troll, "Restaurar Câmera", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    stopViewing()
+    notify("Câmera restaurada.")
+end, true)
 button(troll, "TP (Teleportar ao Alvo)", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
-    if not selectedPlayer or not selectedPlayer.Character or not selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        notify("Selecione um jogador válido.") return
-    end
+    if not selectedPlayer or not selectedPlayer.Character then notify("Selecione um jogador.") return end
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if hrp then hrp.CFrame = selectedPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0); notify("Teleportado para " .. selectedPlayer.Name) end
+    if hrp and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        hrp.CFrame = selectedPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+        notify("TP para "..selectedPlayer.Name)
+    end
 end)
 button(troll, "Fling Yeet", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
-    if not selectedPlayer or not selectedPlayer.Character or not selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        notify("Selecione um alvo na lista.") return
-    end
-    local character = LocalPlayer.Character
-    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+    if not selectedPlayer or not selectedPlayer.Character then notify("Selecione um alvo.") return end
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     local target = selectedPlayer
     local bt = Instance.new("BodyThrust", hrp)
@@ -696,7 +1135,7 @@ button(troll, "Fling Yeet", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
         end
         bt:Destroy()
     end)
-    notify("Fling Yeet aplicado em " .. target.Name)
+    notify("Fling Yeet em "..target.Name)
 end)
 button(troll, "Toque Fling", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     pcall(function() loadstring(game:HttpGet("https://pastebin.com/raw/LgZwZ7ZB", true))() end)
@@ -714,9 +1153,7 @@ local function setupBlackHolePlayer()
     local folder = Instance.new("Folder", Workspace)
     local part = Instance.new("Part", folder)
     local att1 = Instance.new("Attachment", part)
-    part.Anchored = true
-    part.CanCollide = false
-    part.Transparency = 1
+    part.Anchored = true; part.CanCollide = false; part.Transparency = 1
     return hrp, att1
 end
 if not getgenv().Network then
@@ -749,11 +1186,9 @@ local function ForcePart(v, attachment1)
         local AlignPosition = Instance.new("AlignPosition", v)
         local Attachment2 = Instance.new("Attachment", v)
         Torque.Attachment0 = Attachment2
-        AlignPosition.MaxForce = math.huge
-        AlignPosition.MaxVelocity = math.huge
+        AlignPosition.MaxForce = math.huge; AlignPosition.MaxVelocity = math.huge
         AlignPosition.Responsiveness = 500
-        AlignPosition.Attachment0 = Attachment2
-        AlignPosition.Attachment1 = attachment1
+        AlignPosition.Attachment0 = Attachment2; AlignPosition.Attachment1 = attachment1
     end
 end
 button(troll, "Black Hole", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
@@ -808,7 +1243,10 @@ end)
 button(fun, "Girar Personagem", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if hrp then
-        for i = 1, 36 do hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(10), 0); RunService.Heartbeat:Wait() end
+        for i = 1, 36 do
+            hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(10), 0)
+            RunService.Heartbeat:Wait()
+        end
         notify("Giro concluído!")
     end
 end)
@@ -838,7 +1276,7 @@ button(playerPage, "Aplicar Velocidade", UDim2.new(1, -4, 0, 34), UDim2.new(), f
     local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
     if not hum or not n then return end
     hum.WalkSpeed = math.clamp(n, 16, 150)
-    notify("Velocidade definida: " .. hum.WalkSpeed)
+    notify("Velocidade: "..hum.WalkSpeed)
 end)
 local jumpInput = textbox(playerPage, "Força do Pulo (50 - 300)", UDim2.new(1, -4, 0, 36), UDim2.new())
 button(playerPage, "Aplicar Pulo", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
@@ -847,12 +1285,13 @@ button(playerPage, "Aplicar Pulo", UDim2.new(1, -4, 0, 34), UDim2.new(), functio
     if not hum or not n then return end
     hum.UseJumpPower = true
     hum.JumpPower = math.clamp(n, 50, 300)
-    notify("Pulo definido: " .. hum.JumpPower)
+    notify("Pulo: "..hum.JumpPower)
 end)
 button(playerPage, "Resetar Personagem", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
     if hum then hum.Health = 0 end
-end, true)-- 6. ESP
+end, true)
+-- 6. ESP
 local espPage = newPage("Esp")
 pageTitle(espPage, "ESP Geral & MM2")
 local espEnabled = false
@@ -883,7 +1322,7 @@ button(espPage, "ESP MurderMystery2", UDim2.new(1, -4, 0, 34), UDim2.new(), func
     pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/siriguela820/Siriguela-hub-V1/refs/heads/main/MurderMystery2", true))()
     end)
-    notify("ESP MM2 Carregado.")
+    notify("ESP MM2 carregado.")
 end)
 
 -- 7. FE
@@ -942,7 +1381,7 @@ end)
 local protecao = newPage("Proteção")
 pageTitle(protecao, "Proteções e Segurança")
 local antiFlingActive = false
-button(protecao, "Alternar Anti Fling (Anula Ataques)", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
+button(protecao, "Alternar Anti Fling", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
     antiFlingActive = not antiFlingActive
     notify(antiFlingActive and "Anti Fling ATIVADO!" or "Anti Fling DESATIVADO.")
 end)
@@ -958,39 +1397,35 @@ RunService.Heartbeat:Connect(function()
         end
     end
 end)
-infoCard(protecao, "Modo Anti Fling", "Anula física anômala e impulsos excessivos aplicados por terceiros.")
+infoCard(protecao, "Modo Anti Fling", "Anula física anômala e impulsos excessivos.")
 
 -- 10. SETTINGS
 local settings = newPage("Settings")
 pageTitle(settings, "Configurações")
-button(settings, "Alternar Escala", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
-    scale.Scale = scale.Scale == 1 and 0.85 or 1
+local scaleSteps = {0.6, 0.75, 1}
+local scaleIndex = 2
+button(settings, "Alternar Escala (0.6/0.75/1)", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
+    scaleIndex = scaleIndex + 1
+    if scaleIndex > #scaleSteps then scaleIndex = 1 end
+    scale.Scale = scaleSteps[scaleIndex]
+    notify("Escala: "..scale.Scale)
 end)
 button(settings, "Centralizar Janela", UDim2.new(1, -4, 0, 36), UDim2.new(), function()
-    main.Position = UDim2.new(0.5, -main.AbsoluteSize.X / 2, 0.5, -main.AbsoluteSize.Y / 2)
+    main.Position = UDim2.new(0.5, -main.AbsoluteSize.X/2, 0.5, -main.AbsoluteSize.Y/2)
 end, true)
 
--- ============================================================
--- NAVEGAÇÃO COMPLETA
--- ============================================================
+-- === NAVEGAÇÃO ===
 for _, entry in ipairs({
-    {"Home", "⌂"},
-    {"Comandos", "⌨"},
-    {"Troll", "☠"},
-    {"Fun", "★"},
-    {"Player", "☺"},
-    {"Esp", "👁"},
-    {"FE", "⚡"},
-    {"Scripts", "▤"},
-    {"Proteção", "🛡"},
-    {"Settings", "⚙"},
+    {"Home", "⌂"}, {"Comandos", "⌨"}, {"Troll", "☠"}, {"Fun", "★"},
+    {"Player", "☺"}, {"Esp", "👁"}, {"FE", "⚡"}, {"Scripts", "▤"},
+    {"Proteção", "🛡"}, {"Settings", "⚙"},
 }) do addNav(entry[1], entry[2]) end
 
 activePage = pages.Home
 activePage.Visible = true
 navButtons.Home.BackgroundColor3 = COLORS.red2
 
--- Arrastar janela
+-- === ARRASTAR JANELA PRINCIPAL ===
 local dragging, dragStart, startPos
 header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -1009,34 +1444,91 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-local minimized = false
-minimize.Activated:Connect(function()
-    minimized = not minimized
-    sidebar.Visible = not minimized
-    content.Visible = not minimized
-    main.Size = minimized and UDim2.new(0, 260, 0, 48) or UDim2.new(0, 680, 0, 420)
-    minimize.Text = minimized and "+" or "—"
-end)
+-- === MINIMIZAR COM QUADRADINHO "S" ===
+local miniBtn = make("TextButton", {
+    Name = "SiriguelaMiniBtn",
+    Size = UDim2.new(0, 44, 0, 44),
+    Position = UDim2.new(0, 20, 0.5, -22),
+    BackgroundColor3 = COLORS.red2,
+    Text = "S",
+    TextColor3 = COLORS.text,
+    Font = Enum.Font.GothamBlack,
+    TextSize = 22,
+    BorderSizePixel = 0,
+    AutoButtonColor = true,
+    Visible = false,
+    ZIndex = 20,
+}, gui)
+corner(miniBtn, 10)
+stroke(miniBtn, COLORS.red, 1.5)
 
-UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end
-    if input.KeyCode == Enum.KeyCode.RightShift and gui.Parent then
-        main.Visible = not main.Visible
+local miniDragging = false
+local miniDragStart = nil
+local miniStartPos = nil
+local miniClickStart = nil
+
+miniBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        miniDragging = true
+        miniDragStart = input.Position
+        miniStartPos = miniBtn.Position
+        miniClickStart = input.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                miniDragging = false
+            end
+        end)
     end
 end)
 
--- ============================================================
--- CARREGAMENTO DO SIRIGUELA ADMIN (substitui o Infinite Yield)
--- ============================================================
+UserInputService.InputChanged:Connect(function(input)
+    if miniDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - miniDragStart
+        miniBtn.Position = UDim2.new(
+            miniStartPos.X.Scale, miniStartPos.X.Offset + delta.X,
+            miniStartPos.Y.Scale, miniStartPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+local function doMinimize()
+    main.Visible = false
+    miniBtn.Visible = true
+end
+local function doRestore()
+    main.Visible = true
+    miniBtn.Visible = false
+end
+
+minimize.Activated:Connect(function() doMinimize() end)
+
+miniBtn.Activated:Connect(function()
+    if miniClickStart then
+        local mouseNow = UserInputService:GetMouseLocation()
+        local delta = (mouseNow - miniClickStart).Magnitude
+        if delta < 8 then
+            doRestore()
+        end
+    else
+        doRestore()
+    end
+end)
+
+-- === TECLA RIGHTSHIFT PARA TOGGLE ===
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.RightShift and gui.Parent then
+        if main.Visible then doMinimize() else doRestore() end
+    end
+end)
+
+-- === CARREGAR SIRIGUELA ADMIN (via arquivo local ou URL) ===
 task.spawn(function()
     pcall(function()
         local adminSrc = nil
         if isfile then
-            for _, path in ipairs({"SiriguelaAdmin.txt", "Siriguela admin k.txt", "Admin.txt", "Admin_2.txt"}) do
-                if isfile(path) then
-                    adminSrc = readfile(path)
-                    break
-                end
+            for _, path in ipairs({"SiriguelaAdmin.txt", "Siriguela admin k.txt", "Admin.txt"}) do
+                if isfile(path) then adminSrc = readfile(path) break end
             end
         end
         if not adminSrc then
@@ -1046,9 +1538,7 @@ task.spawn(function()
         end
         if adminSrc then
             loadstring(adminSrc)()
-            print("[Siriguela Hub] Admin carregado com sucesso.")
-        else
-            warn("[Siriguela Hub] Siriguela Admin nao encontrado. Coloque 'SiriguelaAdmin.txt' no executor.")
+            print("[Siriguela Hub] Admin carregado.")
         end
     end)
 end)
