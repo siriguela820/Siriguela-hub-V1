@@ -1,5 +1,5 @@
 --[[
-    SIRIGUELA HUB ULTIMATE - Versão Final Completa
+    SIRIGUELA HUB ULTIMATE - Versão Final Definitiva
     PARTE 1/3 - Base, helpers, Home
     COLE AS 3 PARTES EM UM ÚNICO ARQUIVO .LUA
 ]]
@@ -1140,79 +1140,119 @@ button(troll, "Toque Fling", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     notify("Toque Fling ativado!")
 end)
 
--- === BLACK HOLE (dentro do alvo) ===
-local blackHoleTargetActive = false
-local bhAngle = 1
-local bhRadius = 5
-local bhAttachment1Global = nil
-local bhTargetUser = nil
+-- === BLACK HOLE (Bring Parts) - fiel ao original com trava de segurança ===
+local blackHoleActive = false
+local blackHoleParts = {}
+local blackHoleConnection = nil
+local bhAttachment1 = nil
 
-local function setupBlackHoleTarget()
-    local folder = Instance.new("Folder", Workspace)
-    local part = Instance.new("Part", folder)
-    local att1 = Instance.new("Attachment", part)
-    part.Anchored = true; part.CanCollide = false; part.Transparency = 1
-    part.Size = Vector3.new(0.1, 0.1, 0.1)
-    return part, att1
+local function setupBlackHoleAttachment()
+    local Folder = Instance.new("Folder", Workspace)
+    local Part = Instance.new("Part", Folder)
+    Part.Anchored = true
+    Part.CanCollide = false
+    Part.Transparency = 1
+    Part.Size = Vector3.new(0.1, 0.1, 0.1)
+    local att1 = Instance.new("Attachment", Part)
+    return att1
 end
 
-local function bhForcePart(v, attachment1)
-    if v:IsA("Part") and not v.Anchored and not v.Parent:FindFirstChild("Humanoid") and not v.Parent:FindFirstChild("Head") and v.Name ~= "Handle" then
-        for _, x in next, v:GetChildren() do
-            if x:IsA("BodyAngularVelocity") or x:IsA("BodyForce") or x:IsA("BodyGyro")
-                or x:IsA("BodyPosition") or x:IsA("BodyThrust") or x:IsA("BodyVelocity")
-                or x:IsA("RocketPropulsion") then
+local function ForcePartBH(v, attachment1)
+    if v:IsA("BasePart") and not v.Anchored 
+        and not v.Parent:FindFirstChildOfClass("Humanoid") 
+        and not v.Parent:FindFirstChild("Head") 
+        and v.Name ~= "Handle" then
+        
+        if not blackHoleParts[v] then
+            blackHoleParts[v] = {
+                CanCollide = v.CanCollide,
+                CustomPhysics = v.CustomPhysicalProperties,
+                Velocity = v.Velocity
+            }
+        end
+        
+        for _, x in ipairs(v:GetChildren()) do
+            if x:IsA("BodyMover") or x:IsA("RocketPropulsion") then
                 x:Destroy()
             end
         end
-        if v:FindFirstChild("Attachment") then v:FindFirstChild("Attachment"):Destroy() end
-        if v:FindFirstChild("AlignPosition") then v:FindFirstChild("AlignPosition"):Destroy() end
-        if v:FindFirstChild("Torque") then v:FindFirstChild("Torque"):Destroy() end
+        if v:FindFirstChild("SiriguelaBH_Att") then v:FindFirstChild("SiriguelaBH_Att"):Destroy() end
+        if v:FindFirstChild("SiriguelaBH_Align") then v:FindFirstChild("SiriguelaBH_Align"):Destroy() end
+        if v:FindFirstChild("SiriguelaBH_Torque") then v:FindFirstChild("SiriguelaBH_Torque"):Destroy() end
+        
         v.CanCollide = false
         local Torque = Instance.new("Torque", v)
-        Torque.Torque = Vector3.new(1000000, 1000000, 1000000)
+        Torque.Name = "SiriguelaBH_Torque"
+        Torque.Torque = Vector3.new(100000, 100000, 100000)
         local AlignPosition = Instance.new("AlignPosition", v)
+        AlignPosition.Name = "SiriguelaBH_Align"
         local Attachment2 = Instance.new("Attachment", v)
+        Attachment2.Name = "SiriguelaBH_Att"
         Torque.Attachment0 = Attachment2
         AlignPosition.MaxForce = math.huge
         AlignPosition.MaxVelocity = math.huge
-        AlignPosition.Responsiveness = 500
+        AlignPosition.Responsiveness = 200
         AlignPosition.Attachment0 = Attachment2
         AlignPosition.Attachment1 = attachment1
     end
 end
 
-button(troll, "🕳️ Black Hole (dentro do alvo)", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+local function restoreBH()
+    for part, state in pairs(blackHoleParts) do
+        if part and part.Parent then
+            pcall(function()
+                local torque = part:FindFirstChild("SiriguelaBH_Torque")
+                local align = part:FindFirstChild("SiriguelaBH_Align")
+                local att2 = part:FindFirstChild("SiriguelaBH_Att")
+                if torque then torque:Destroy() end
+                if align then align:Destroy() end
+                if att2 then att2:Destroy() end
+                part.CanCollide = state.CanCollide
+                part.CustomPhysicalProperties = state.CustomPhysics
+                part.Velocity = Vector3.new(0, 0, 0)
+                part.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            end)
+        end
+    end
+    blackHoleParts = {}
+end
+
+button(troll, "🕳️ Black Hole (Bring Parts no alvo)", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
     if not selectedPlayer or not selectedPlayer.Character then
         notify("Selecione um jogador alvo primeiro.")
         return
     end
-    blackHoleTargetActive = not blackHoleTargetActive
-    bhTargetUser = selectedPlayer.Name
-    notify(blackHoleTargetActive and ("Black Hole ATIVADO em: "..bhTargetUser) or "Black Hole desativado")
+    blackHoleActive = not blackHoleActive
+    notify(blackHoleActive and ("Black Hole ATIVADO em: "..selectedPlayer.Name) or "Black Hole desativado")
 
-    if blackHoleTargetActive then
-        local part, att1 = setupBlackHoleTarget()
-        bhAttachment1Global = att1
-        for _, v in next, Workspace:GetDescendants() do bhForcePart(v, att1) end
-        Workspace.DescendantAdded:Connect(function(v)
-            if blackHoleTargetActive then bhForcePart(v, att1) end
+    if blackHoleActive then
+        bhAttachment1 = setupBlackHoleAttachment()
+        for _, v in ipairs(Workspace:GetDescendants()) do
+            ForcePartBH(v, bhAttachment1)
+        end
+        blackHoleConnection = Workspace.DescendantAdded:Connect(function(v)
+            if blackHoleActive then ForcePartBH(v, bhAttachment1) end
         end)
-        spawn(function()
-            while blackHoleTargetActive and RunService.RenderStepped:Wait() do
-                bhAngle = bhAngle + math.rad(4)
-                local offsetX = math.cos(bhAngle) * bhRadius
-                local offsetZ = math.sin(bhAngle) * bhRadius
+        task.spawn(function()
+            while blackHoleActive and RunService.RenderStepped:Wait() do
                 if selectedPlayer and selectedPlayer.Character then
                     local hrp = selectedPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        att1.WorldCFrame = hrp.CFrame * CFrame.new(offsetX, 0, offsetZ)
+                    if hrp and bhAttachment1 then
+                        bhAttachment1.WorldCFrame = hrp.CFrame
                     end
                 end
             end
         end)
     else
-        if bhAttachment1Global then bhAttachment1Global.WorldCFrame = CFrame.new(0, -1000, 0) end
+        if blackHoleConnection then
+            blackHoleConnection:Disconnect()
+            blackHoleConnection = nil
+        end
+        if bhAttachment1 then
+            bhAttachment1.WorldCFrame = CFrame.new(0, -1000, 0)
+            bhAttachment1 = nil
+        end
+        restoreBH()
     end
 end)
 
@@ -1233,7 +1273,7 @@ button(troll, "TP Tool (Clique para Teleportar)", UDim2.new(1, -4, 0, 34), UDim2
 end, true)
 
 -- ============================================================
--- 4. FUN (inclui Tornado original)
+-- 4. FUN (Tornado Super Ring Parts V6)
 -- ============================================================
 local fun = newPage("Fun")
 pageTitle(fun, "Fun & Diversão")
@@ -1262,102 +1302,145 @@ button(fun, "Invisível (Invis GUI)", UDim2.new(1, -4, 0, 34), UDim2.new(), func
     notify("Invisibilidade executada.")
 end)
 
--- === TORNADO ORIGINAL ===
+-- === TORNADO (Super Ring Parts V6) - com trava de segurança ===
 local tornadoActive = false
-local tornadoRadius = 50
-local tornadoHeight = 5
-local tornadoRotationSpeed = 0.25
-local tornadoAttractionStrength = 750
+local tornadoConfig = {
+    radius = 50,
+    height = 100,
+    rotationSpeed = 10,
+    attractionStrength = 1000,
+}
 local tornadoParts = {}
+local tornadoModifiedParts = {}
 
-if not getgenv().Network then
-    getgenv().Network = { BaseParts = {}, Velocity = Vector3.new(14.46262424, 14.46262424, 14.46262424) }
-    Network.RetainPart = function(Part)
-        if typeof(Part) == "Instance" and Part:IsA("BasePart") and Part:IsDescendantOf(Workspace) then
-            table.insert(Network.BaseParts, Part)
-            Part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
-            Part.CanCollide = false
+pcall(function()
+    if isfile and isfile("SiriguelaTornadoConfig.txt") then
+        local data = HttpService:JSONDecode(readfile("SiriguelaTornadoConfig.txt"))
+        for k, v in pairs(data) do
+            if tornadoConfig[k] ~= nil then tornadoConfig[k] = v end
         end
     end
-    RunService.Heartbeat:Connect(function()
-        pcall(function() sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge) end)
-        for _, Part in pairs(Network.BaseParts) do
-            if Part:IsDescendantOf(Workspace) then Part.Velocity = Network.Velocity end
+end)
+
+local function saveTornadoConfig()
+    pcall(function()
+        if writefile then
+            writefile("SiriguelaTornadoConfig.txt", HttpService:JSONEncode(tornadoConfig))
         end
     end)
 end
 
-local function RetainPart(Part)
+local function RetainPartTornado(Part)
     if Part:IsA("BasePart") and not Part.Anchored and Part:IsDescendantOf(workspace) then
-        if Part.Parent == LocalPlayer.Character or Part:IsDescendantOf(LocalPlayer.Character) then return false end
-        Part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
-        Part.CanCollide = false
+        if Part.Parent == LocalPlayer.Character or Part:IsDescendantOf(LocalPlayer.Character) then 
+            return false 
+        end
+        if not tornadoModifiedParts[Part] then
+            tornadoModifiedParts[Part] = {
+                CanCollide = Part.CanCollide,
+                CustomPhysics = Part.CustomPhysicalProperties
+            }
+        end
         return true
     end
     return false
 end
-local function addPart(part)
-    if RetainPart(part) then
+
+local function addPartTornado(part)
+    if RetainPartTornado(part) then
         if not table.find(tornadoParts, part) then table.insert(tornadoParts, part) end
     end
 end
-local function removePart(part)
+local function removePartTornado(part)
     local index = table.find(tornadoParts, part)
     if index then table.remove(tornadoParts, index) end
 end
-for _, part in pairs(workspace:GetDescendants()) do addPart(part) end
-workspace.DescendantAdded:Connect(addPart)
-workspace.DescendantRemoving:Connect(removePart)
+
+for _, part in pairs(workspace:GetDescendants()) do addPartTornado(part) end
+workspace.DescendantAdded:Connect(addPartTornado)
+workspace.DescendantRemoving:Connect(removePartTornado)
 
 RunService.Heartbeat:Connect(function()
     if not tornadoActive then return end
-    local targetHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if targetHRP then
-        local center = targetHRP.Position
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        local center = hrp.Position
         for _, part in pairs(tornadoParts) do
             if part.Parent and not part.Anchored then
-                local pos = part.Position
-                local distance = (Vector3.new(pos.X, center.Y, pos.Z) - center).Magnitude
-                local angle = math.atan2(pos.Z - center.Z, pos.X - center.X)
-                local newAngle = angle + math.rad(tornadoRotationSpeed)
-                local targetPos = Vector3.new(
-                    center.X + math.cos(newAngle) * math.min(tornadoRadius, distance),
-                    center.Y + (tornadoHeight * (math.abs(math.sin((pos.Y - center.Y) / tornadoHeight)))),
-                    center.Z + math.sin(newAngle) * math.min(tornadoRadius, distance)
-                )
-                local dir = (targetPos - part.Position).unit
-                part.Velocity = dir * tornadoAttractionStrength
+                pcall(function()
+                    part.CanCollide = false
+                    local pos = part.Position
+                    local distance = (Vector3.new(pos.X, center.Y, pos.Z) - center).Magnitude
+                    local angle = math.atan2(pos.Z - center.Z, pos.X - center.X)
+                    local newAngle = angle + math.rad(tornadoConfig.rotationSpeed)
+                    local targetPos = Vector3.new(
+                        center.X + math.cos(newAngle) * math.min(tornadoConfig.radius, distance),
+                        center.Y + (tornadoConfig.height * (math.abs(math.sin((pos.Y - center.Y) / tornadoConfig.height)))),
+                        center.Z + math.sin(newAngle) * math.min(tornadoConfig.radius, distance)
+                    )
+                    local dir = (targetPos - part.Position).unit
+                    part.Velocity = dir * tornadoConfig.attractionStrength
+                end)
             end
         end
     end
 end)
 
-button(fun, "🌪️ Tornado (self)", UDim2.new(1, -4, 0, 38), UDim2.new(), function()
+local tornadoBtn = button(fun, "🌪️ Tornado (self) — OFF", UDim2.new(1, -4, 0, 38), UDim2.new(), function()
     tornadoActive = not tornadoActive
-    notify(tornadoActive and "🌪️ Tornado ATIVADO!" or "🌪️ Tornado desativado")
+    tornadoBtn.Text = tornadoActive and "🌪️ Tornado (self) — ON" or "🌪️ Tornado (self) — OFF"
+    tornadoBtn.BackgroundColor3 = tornadoActive and Color3.fromRGB(50, 205, 50) or COLORS.red2
+    
+    if not tornadoActive then
+        for part, state in pairs(tornadoModifiedParts) do
+            if part and part.Parent then
+                pcall(function()
+                    part.CanCollide = state.CanCollide
+                    part.CustomPhysicalProperties = state.CustomPhysics
+                    part.Velocity = Vector3.new(0, 0, 0)
+                    part.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                end)
+            end
+        end
+        tornadoModifiedParts = {}
+        notify("🌪️ Tornado desativado (física restaurada)")
+    else
+        notify("🌪️ Tornado ATIVADO!")
+    end
 end)
 
--- Helper para popups numéricos
-local function numericPopup(titleText, hintText, currentVal, callback, minV, maxV)
+local function tornadoControlPopup(titleText, fieldName, minV, maxV, isDecimal)
     local screen = Instance.new("ScreenGui", PlayerGui)
-    screen.Name = "TornadoNumPrompt"
+    screen.Name = "TornadoCtrlPrompt"
     screen.ResetOnSpawn = false
     local bg = Instance.new("TextButton")
-    bg.Size = UDim2.new(1, 0, 1, 0); bg.BackgroundColor3 = Color3.new(0,0,0)
-    bg.BackgroundTransparency = 0.5; bg.BorderSizePixel = 0; bg.Text = ""
+    bg.Size = UDim2.new(1, 0, 1, 0)
+    bg.BackgroundColor3 = Color3.new(0, 0, 0)
+    bg.BackgroundTransparency = 0.5
+    bg.BorderSizePixel = 0
+    bg.Text = ""
     bg.Parent = screen
     local box = Instance.new("Frame")
-    box.Size = UDim2.new(0, 320, 0, 140); box.Position = UDim2.new(0.5, -160, 0.5, -70)
-    box.BackgroundColor3 = COLORS.bg; box.BorderSizePixel = 0
-    corner(box, 10); stroke(box, COLORS.red, 1.5); box.Parent = screen
-    local tl = label(box, titleText.." (atual: "..currentVal..")", UDim2.new(1, -20, 0, 28), UDim2.new(0, 10, 0, 8), 14)
+    box.Size = UDim2.new(0, 320, 0, 140)
+    box.Position = UDim2.new(0.5, -160, 0.5, -70)
+    box.BackgroundColor3 = COLORS.bg
+    box.BorderSizePixel = 0
+    corner(box, 10)
+    stroke(box, COLORS.red, 1.5)
+    box.Parent = screen
+    local tl = label(box, titleText.." (atual: "..tornadoConfig[fieldName]..")", UDim2.new(1, -20, 0, 28), UDim2.new(0, 10, 0, 8), 14)
     tl.Font = Enum.Font.GothamBold
-    label(box, hintText, UDim2.new(1, -20, 0, 16), UDim2.new(0, 10, 0, 34), 11, COLORS.muted)
+    local hint = isDecimal and ("Valor decimal ("..minV.." a "..maxV..")") or ("Valor inteiro ("..minV.." a "..maxV..")")
+    label(box, hint, UDim2.new(1, -20, 0, 16), UDim2.new(0, 10, 0, 34), 11, COLORS.muted)
     local inp = textbox(box, "Novo valor...", UDim2.new(1, -20, 0, 34), UDim2.new(0, 10, 0, 54))
     inp:CaptureFocus()
     local function aplicar()
         local n = tonumber(inp.Text)
-        if n then callback(math.clamp(n, minV, maxV)) end
+        if n then
+            tornadoConfig[fieldName] = math.clamp(n, minV, maxV)
+            notify(titleText..": "..tornadoConfig[fieldName])
+            saveTornadoConfig()
+        end
         screen:Destroy()
     end
     button(box, "Aplicar", UDim2.new(0.45, -5, 0, 30), UDim2.new(0, 10, 1, -40), aplicar)
@@ -1367,19 +1450,16 @@ local function numericPopup(titleText, hintText, currentVal, callback, minV, max
 end
 
 button(fun, "⚙️ Raio do Tornado", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
-    numericPopup("🌪️ Raio do Tornado", "1 - 10000", tornadoRadius, function(v)
-        tornadoRadius = v; notify("Raio: "..v)
-    end, 1, 10000)
-end, true)
-button(fun, "⚡ Velocidade do Tornado", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
-    numericPopup("⚡ Velocidade", "0.01 - 5 (0.25 = padrão)", tornadoRotationSpeed, function(v)
-        tornadoRotationSpeed = v; notify("Velocidade: "..v)
-    end, 0.01, 5)
+    tornadoControlPopup("⚙️ Raio", "radius", 0, 10000, false)
 end, true)
 button(fun, "📏 Altura do Tornado", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
-    numericPopup("📏 Altura", "1 - 50 (5 = padrão)", tornadoHeight, function(v)
-        tornadoHeight = v; notify("Altura: "..v)
-    end, 1, 50)
+    tornadoControlPopup("📏 Altura", "height", 1, 1000, false)
+end, true)
+button(fun, "⚡ Velocidade de Rotação", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    tornadoControlPopup("⚡ Rotação", "rotationSpeed", 0.01, 50, true)
+end, true)
+button(fun, "💪 Força de Atração", UDim2.new(1, -4, 0, 34), UDim2.new(), function()
+    tornadoControlPopup("💪 Força", "attractionStrength", 0, 100000, false)
 end, true)
 
 -- ============================================================
@@ -1587,7 +1667,6 @@ button(protecao, "🛡️ Proteção contra C#", UDim2.new(1, -4, 0, 42), UDim2.
         end
     end)
 
-    -- Segurar RightShift por 1s para sair
     task.spawn(function()
         local held = 0
         local conn
